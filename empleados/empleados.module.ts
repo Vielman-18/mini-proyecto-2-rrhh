@@ -3,8 +3,7 @@ import { EmpleadosService } from './empleados.service';
 import { EmpleadosController } from './empleados.controller';
 
 @Module({
-  controllers: [EmpleadosController],
   providers: [EmpleadosService],
-  exports: [EmpleadosService],
+  controllers: [EmpleadosController]
 })
 export class EmpleadosModule {}

@@ -1,53 +1,69 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+
+export enum EstadoLaboral {
+  ACTIVO = 'activo',
+  SUSPENDIDO = 'suspendido',
+  RETIRADO = 'retirado',
+}
+
+export interface Empleado {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  fechaNacimiento: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  dpi: string;
+  salario: number;
+  cargo: string;
+  departamento: string;
+  estado: EstadoLaboral;
+}
 
 @Injectable()
 export class EmpleadosService {
-  constructor(private readonly prisma: PrismaService) {}
+  private empleados: Empleado[] = [];
+  private idCounter = 1;
 
-  async remove(id: number) {
-    const empleado = await this.prisma.empleados.findUnique({
-      where: { id },
-    });
-
-    if (!empleado) {
-      throw new NotFoundException(`Empleado con id ${id} no existe`);
-    }
-
-    await this.prisma.empleados.delete({
-      where: { id },
-    });
-
-    return {
-      message: 'Empleado eliminado correctamente',
+  crear(data: Omit<Empleado, 'id' | 'estado'>) {
+    const existe = this.empleados.find(e => e.dpi === data.dpi);
+    if (existe) throw new ConflictException('Ya existe un empleado con ese DPI');
+    const empleado: Empleado = {
+      id: this.idCounter++,
+      ...data,
+      estado: EstadoLaboral.ACTIVO,
     };
+    this.empleados.push(empleado);
+    return empleado;
   }
 
-  async cambiarEstado(id: number, estado: string) {
-    const estadosValidos = ['activo', 'suspendido', 'retirado'];
+  listar() {
+    return this.empleados;
+  }
 
-    if (!estadosValidos.includes(estado)) {
-      throw new BadRequestException(
-        'Estado inválido. Solo se permite: activo, suspendido o retirado',
-      );
-    }
+  buscarPorId(id: number) {
+    const empleado = this.empleados.find(e => e.id === id);
+    if (!empleado) throw new NotFoundException('Empleado no encontrado');
+    return empleado;
+  }
 
-    const empleado = await this.prisma.empleados.findUnique({
-      where: { id },
-    });
+  actualizar(id: number, data: Partial<Omit<Empleado, 'id'>>) {
+    const empleado = this.buscarPorId(id);
+    Object.assign(empleado, data);
+    return empleado;
+  }
 
-    if (!empleado) {
-      throw new NotFoundException(`Empleado con id ${id} no existe`);
-    }
+  eliminar(id: number) {
+    const index = this.empleados.findIndex(e => e.id === id);
+    if (index === -1) throw new NotFoundException('Empleado no encontrado');
+    this.empleados.splice(index, 1);
+    return { message: 'Empleado eliminado correctamente' };
+  }
 
-    const empleadoActualizado = await this.prisma.empleados.update({
-      where: { id },
-      data: { estado },
-    });
-
-    return {
-      message: 'Estado del empleado actualizado correctamente',
-      data: empleadoActualizado,
-    };
+  cambiarEstado(id: number, estado: EstadoLaboral) {
+    const empleado = this.buscarPorId(id);
+    empleado.estado = estado;
+    return empleado;
   }
 }

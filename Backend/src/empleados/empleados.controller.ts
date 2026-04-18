@@ -1,42 +1,54 @@
-import { Body, Controller, Delete, Param, ParseIntPipe, Patch } from '@nestjs/common';
-import { EmpleadosService } from './empleados.service';
-import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { EmpleadosService, EstadoLaboral } from './empleados.service';
 
-@ApiTags('Empleados')
+class CrearEmpleadoDto {
+  nombres: string;
+  apellidos: string;
+  fechaNacimiento: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  dpi: string;
+  salario: number;
+  cargo: string;
+  departamento: string;
+}
+
+class CambiarEstadoDto {
+  estado: EstadoLaboral;
+}
+
 @Controller('empleados')
 export class EmpleadosController {
-  constructor(private readonly empleadosService: EmpleadosService) {}
+  constructor(private empleadosService: EmpleadosService) {}
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Eliminar un empleado por id' })
-  @ApiParam({ name: 'id', type: Number, description: 'Id del empleado' })
-  @ApiResponse({ status: 200, description: 'Empleado eliminado correctamente' })
-  @ApiResponse({ status: 404, description: 'Empleado no encontrado' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.empleadosService.remove(id);
+  @Post()
+  crear(@Body() dto: CrearEmpleadoDto) {
+    return this.empleadosService.crear(dto);
   }
 
-  @Patch(':id/estado')
-  @ApiOperation({ summary: 'Cambiar el estado de un empleado' })
-  @ApiParam({ name: 'id', type: Number, description: 'Id del empleado' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        estado: {
-          type: 'string',
-          example: 'retirado',
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 200, description: 'Estado actualizado correctamente' })
-  @ApiResponse({ status: 400, description: 'Estado inválido' })
-  @ApiResponse({ status: 404, description: 'Empleado no encontrado' })
-  cambiarEstado(
-    @Param('id', ParseIntPipe) id: number,
-    @Body('estado') estado: string,
-  ) {
-    return this.empleadosService.cambiarEstado(id, estado);
+  @Get()
+  listar() {
+    return this.empleadosService.listar();
+  }
+
+  @Get(':id')
+  buscarPorId(@Param('id', ParseIntPipe) id: number) {
+    return this.empleadosService.buscarPorId(id);
+  }
+
+  @Put(':id')
+  actualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CrearEmpleadoDto>) {
+    return this.empleadosService.actualizar(id, dto);
+  }
+
+  @Delete(':id')
+  eliminar(@Param('id', ParseIntPipe) id: number) {
+    return this.empleadosService.eliminar(id);
+  }
+
+  @Put(':id/estado')
+  cambiarEstado(@Param('id', ParseIntPipe) id: number, @Body() dto: CambiarEstadoDto) {
+    return this.empleadosService.cambiarEstado(id, dto.estado);
   }
 }
