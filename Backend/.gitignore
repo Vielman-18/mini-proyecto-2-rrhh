@@ -1,9 +1,4 @@
 # compiled output
-Backend/node_modules
-Backend/dist
-Backend/generated
-Backend/.env
-
 /dist
 /node_modules
 /build
@@ -59,7 +54,3 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-/generated/prisma
-
-.pdf
