@@ -9,9 +9,11 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { DocumentosService } from './documentos.service';
 
 @Controller('documentos')
 export class DocumentosController {
+  constructor(private readonly documentosService: DocumentosService) {}
 
   @Post('subir')
   @ApiConsumes('multipart/form-data')
@@ -19,18 +21,9 @@ export class DocumentosController {
     schema: {
       type: 'object',
       properties: {
-        archivo: {
-          type: 'string',
-          format: 'binary',
-        },
-        tipo_documento: {
-          type: 'string',
-          example: 'DPI',
-        },
-        empleado_id: {
-          type: 'number',
-          example: 1,
-        },
+        archivo: { type: 'string', format: 'binary' },
+        tipo_documento: { type: 'string', example: 'DPI' },
+        empleado_id: { type: 'number', example: 1 },
       },
     },
   })
@@ -43,7 +36,6 @@ export class DocumentosController {
           callback(null, nombre);
         },
       }),
-      // 🔥 SOLO PDF
       fileFilter: (req, file, callback) => {
         if (file.mimetype !== 'application/pdf') {
           return callback(new Error('Solo se permiten PDFs'), false);
@@ -52,11 +44,10 @@ export class DocumentosController {
       },
     }),
   )
-  subirArchivo(@UploadedFile() file, @Body() body: any) {
-    return {
-      message: 'Archivo subido',
-      file: file.filename,
-      body,
-    };
+  async subirArchivo(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: any,
+  ) {
+    return await this.documentosService.guardarDocumento(file, body);
   }
 }
