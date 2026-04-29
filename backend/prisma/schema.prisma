@@ -19,3 +19,31 @@ model empleados {
   departamento String?
   estado       String  @default("activo")
 }
+
+model nomina {
+  id             Int       @id @default(autoincrement())
+  tipo_periodo   String
+  periodo        String
+  fecha_inicio   DateTime
+  fecha_fin      DateTime
+  estado         String    @default("abierta")
+  fecha_creacion DateTime? @default(now())
+}
+
+model documentos {
+  id          Int    @id @default(autoincrement())
+  empleado_id Int
+  nombre      String
+  tipo        String
+  fechaCarga  String
+  ruta        String
+}
+
+model registro_academico {
+  id            Int     @id @default(autoincrement())
+  empleado_id   Int
+  titulo        String
+  institucion   String
+  fechaGrad     String?
+  certificacion String?
+}
