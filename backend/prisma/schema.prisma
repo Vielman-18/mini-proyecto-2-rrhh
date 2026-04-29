@@ -8,16 +8,17 @@ datasource db {
 }
 
 model empleados {
-  id           Int     @id @default(autoincrement())
-  nombres      String
-  apellidos    String
-  dpi          String  @unique
-  direccion    String?
-  telefono     String?
-  salario      Decimal @db.Decimal(10, 2)
-  cargo        String?
-  departamento String?
-  estado       String  @default("activo")
+  id               Int     @id @default(autoincrement())
+  nombres          String
+  apellidos        String
+  dpi              String  @unique
+  fecha_nacimiento DateTime?
+  direccion        String?
+  telefono         String?
+  salario          Decimal @db.Decimal(10, 2)
+  cargo            String?
+  departamento     String?
+  estado           String  @default("activo")
 }
 
 model nomina {
@@ -31,19 +32,24 @@ model nomina {
 }
 
 model documentos {
-  id          Int    @id @default(autoincrement())
-  empleado_id Int
-  nombre      String
-  tipo        String
-  fechaCarga  String
-  ruta        String
+  id             Int    @id @default(autoincrement())
+  empleado_id    Int
+  usuario_id     Int?
+  nombre_archivo String
+  nombre         String?
+  tipo           String?
+  tipo_documento String?
+  fechaCarga     String?
+  ruta_archivo   String?
+  ruta           String?
 }
 
 model registro_academico {
-  id            Int     @id @default(autoincrement())
-  empleado_id   Int
-  titulo        String
-  institucion   String
-  fechaGrad     String?
-  certificacion String?
+  id               Int       @id @default(autoincrement())
+  empleado_id      Int
+  titulo           String
+  institucion      String
+  fecha_graduacion DateTime?
+  fechaGrad        String?
+  certificacion    String?
 }
