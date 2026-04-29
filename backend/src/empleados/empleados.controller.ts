@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
-import { EmpleadosService, EstadoLaboral } from './empleados.service';
+import { EmpleadosService } from './empleados.service';
 
 class CrearEmpleadoDto {
   nombres: string;
@@ -15,16 +15,16 @@ class CrearEmpleadoDto {
 }
 
 class CambiarEstadoDto {
-  estado: EstadoLaboral;
+  estado: string;
 }
 
 @Controller('empleados')
 export class EmpleadosController {
-  constructor(private empleadosService: EmpleadosService) {}
+  constructor(private readonly empleadosService: EmpleadosService) {}
 
   @Post()
-  crear(@Body() dto: CrearEmpleadoDto) {
-    return this.empleadosService.crear(dto);
+  crear(@Body() data: CrearEmpleadoDto) {
+    return this.empleadosService.crear(data);
   }
 
   @Get()
@@ -38,8 +38,8 @@ export class EmpleadosController {
   }
 
   @Put(':id')
-  actualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CrearEmpleadoDto>) {
-    return this.empleadosService.actualizar(id, dto);
+  actualizar(@Param('id', ParseIntPipe) id: number, @Body() data: Partial<CrearEmpleadoDto>) {
+    return this.empleadosService.actualizar(id, data);
   }
 
   @Delete(':id')
