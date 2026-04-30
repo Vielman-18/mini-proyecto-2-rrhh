@@ -15,37 +15,79 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmpleadosController = void 0;
 const common_1 = require("@nestjs/common");
 const empleados_service_1 = require("./empleados.service");
+const crear_empleado_dto_1 = require("./dto/crear-empleado.dto");
+const actualizar_empleado_dto_1 = require("./dto/actualizar-empleado.dto");
+const cambiar_estado_dto_1 = require("./dto/cambiar-estado.dto");
 let EmpleadosController = class EmpleadosController {
+    empleadosService;
     constructor(empleadosService) {
         this.empleadosService = empleadosService;
     }
-    // Listar todos los empleados
-    async listar() {
-        return this.empleadosService.listarEmpleados();
+    crear(dto) {
+        return this.empleadosService.crear(dto);
     }
-    // Crear un nuevo empleado
-    async crear(nombres, apellidos, dpi, salario) {
-        return this.empleadosService.crearEmpleado(nombres, apellidos, dpi, salario);
+    listar() {
+        return this.empleadosService.listar();
+    }
+    buscarPorId(id) {
+        return this.empleadosService.buscarPorId(id);
+    }
+    actualizar(id, dto) {
+        return this.empleadosService.actualizar(id, dto);
+    }
+    eliminar(id) {
+        return this.empleadosService.eliminar(id);
+    }
+    cambiarEstado(id, dto) {
+        return this.empleadosService.cambiarEstado(id, dto.estado);
     }
 };
 exports.EmpleadosController = EmpleadosController;
 __decorate([
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [crear_empleado_dto_1.CrearEmpleadoDto]),
+    __metadata("design:returntype", void 0)
+], EmpleadosController.prototype, "crear", null);
+__decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], EmpleadosController.prototype, "listar", null);
 __decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)('nombres')),
-    __param(1, (0, common_1.Body)('apellidos')),
-    __param(2, (0, common_1.Body)('dpi')),
-    __param(3, (0, common_1.Body)('salario')),
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, Number]),
-    __metadata("design:returntype", Promise)
-], EmpleadosController.prototype, "crear", null);
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], EmpleadosController.prototype, "buscarPorId", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, actualizar_empleado_dto_1.ActualizarEmpleadoDto]),
+    __metadata("design:returntype", void 0)
+], EmpleadosController.prototype, "actualizar", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], EmpleadosController.prototype, "eliminar", null);
+__decorate([
+    (0, common_1.Put)(':id/estado'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, cambiar_estado_dto_1.CambiarEstadoDto]),
+    __metadata("design:returntype", void 0)
+], EmpleadosController.prototype, "cambiarEstado", null);
 exports.EmpleadosController = EmpleadosController = __decorate([
     (0, common_1.Controller)('empleados'),
     __metadata("design:paramtypes", [empleados_service_1.EmpleadosService])
 ], EmpleadosController);
+//# sourceMappingURL=empleados.controller.js.map

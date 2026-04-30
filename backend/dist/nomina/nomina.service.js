@@ -13,13 +13,14 @@ exports.NominaService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 let NominaService = class NominaService {
+    prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
     async crearNomina(periodo) {
         return this.prisma.nomina.create({
             data: {
-                tipo_periodo: "mensual", // usa el nombre exacto del schema
+                tipo_periodo: "mensual",
                 periodo,
                 fecha_inicio: new Date(),
                 fecha_fin: new Date(),
@@ -36,3 +37,4 @@ exports.NominaService = NominaService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], NominaService);
+//# sourceMappingURL=nomina.service.js.map

@@ -20,3 +20,4 @@ exports.NominaModule = NominaModule = __decorate([
         providers: [nomina_service_1.NominaService, prisma_service_1.PrismaService],
     })
 ], NominaModule);
+//# sourceMappingURL=nomina.module.js.map

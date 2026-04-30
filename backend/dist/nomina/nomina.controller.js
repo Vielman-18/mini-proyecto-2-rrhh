@@ -16,14 +16,13 @@ exports.NominaController = void 0;
 const common_1 = require("@nestjs/common");
 const nomina_service_1 = require("./nomina.service");
 let NominaController = class NominaController {
+    nominaService;
     constructor(nominaService) {
         this.nominaService = nominaService;
     }
-    // Crear una nueva nómina para un periodo
     async crear(periodo) {
         return this.nominaService.crearNomina(periodo);
     }
-    // Listar todas las nóminas registradas
     async listar() {
         return this.nominaService.listarNominas();
     }
@@ -46,3 +45,4 @@ exports.NominaController = NominaController = __decorate([
     (0, common_1.Controller)('nomina'),
     __metadata("design:paramtypes", [nomina_service_1.NominaService])
 ], NominaController);
+//# sourceMappingURL=nomina.controller.js.map
