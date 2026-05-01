@@ -17,19 +17,23 @@ let NominaService = class NominaService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async crearNomina(periodo) {
-        return this.prisma.nomina.create({
+    async crearNomina(dto) {
+        return await this.prisma.nomina.create({
             data: {
-                tipo_periodo: "mensual",
-                periodo,
-                fecha_inicio: new Date(),
-                fecha_fin: new Date(),
-                estado: "abierta",
+                tipo_periodo: dto.tipo_periodo,
+                periodo: dto.periodo,
+                fecha_inicio: new Date(dto.fecha_inicio),
+                fecha_fin: new Date(dto.fecha_fin),
+                estado: dto.estado || 'abierta',
             },
         });
     }
     async listarNominas() {
-        return this.prisma.nomina.findMany();
+        return await this.prisma.nomina.findMany({
+            orderBy: {
+                fecha_creacion: 'desc',
+            },
+        });
     }
 };
 exports.NominaService = NominaService;

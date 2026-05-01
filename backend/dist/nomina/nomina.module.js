@@ -8,8 +8,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NominaModule = void 0;
 const common_1 = require("@nestjs/common");
-const nomina_service_1 = require("./nomina.service");
 const nomina_controller_1 = require("./nomina.controller");
+const nomina_service_1 = require("./nomina.service");
 const prisma_service_1 = require("../prisma/prisma.service");
 let NominaModule = class NominaModule {
 };
