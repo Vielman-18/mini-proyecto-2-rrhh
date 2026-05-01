@@ -1,46 +1,66 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
-export enum Role {
-  ADMIN = 'admin',
-  RRHH = 'rrhh',
-  EMPLEADO = 'empleado',
-}
-
-interface User {
-  id: number;
-  email: string;
-  password: string;
-  role: Role;
-}
-
 @Injectable()
 export class AuthService {
-  private users: User[] = [];
-  private idCounter = 1;
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
-  constructor(private jwtService: JwtService) {}
+  async register(dto: any) {
+    const exists = await this.prisma.usuarios.findUnique({
+      where: { correo: dto.correo },
+    });
 
-  async register(email: string, password: string, role: Role = Role.EMPLEADO) {
-    const exists = this.users.find(u => u.email === email);
-    if (exists) throw new ConflictException('El usuario ya existe');
-    const hashed = await bcrypt.hash(password, 10);
-    const user: User = { id: this.idCounter++, email, password: hashed, role };
-    this.users.push(user);
-    return { message: 'Usuario registrado correctamente', userId: user.id };
+    if (exists) {
+      throw new ConflictException('El usuario ya existe');
+    }
+
+    
+    const hashed = await bcrypt.hash(dto.contrasena, 10);
+
+    const user = await this.prisma.usuarios.create({
+      data: {
+        nombre: dto.nombre,
+        correo: dto.correo,
+        contrasena: hashed,
+        rol: dto.rol,
+      },
+    });
+
+    return {
+      message: 'Usuario registrado correctamente',
+      userId: user.id,
+    };
   }
 
-  async login(email: string, password: string) {
-    const user = this.users.find(u => u.email === email);
-    if (!user) throw new UnauthorizedException('Credenciales incorrectas');
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) throw new UnauthorizedException('Credenciales incorrectas');
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    return { access_token: this.jwtService.sign(payload), role: user.role };
-  }
+  async login(correo: string, contrasena: string) {
+    const user = await this.prisma.usuarios.findUnique({
+      where: { correo },
+    });
 
-  findById(id: number) {
-    return this.users.find(u => u.id === id);
+    if (!user) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    const valid = await bcrypt.compare(contrasena, user.contrasena);
+
+    if (!valid) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    const payload = {
+      sub: user.id,
+      correo: user.correo,
+      rol: user.rol,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      rol: user.rol,
+    };
   }
 }
