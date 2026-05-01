@@ -15,12 +15,13 @@ const empleados_module_1 = require("./empleados/empleados.module");
 const validacion_module_1 = require("./validacion/validacion.module");
 const reportes_module_1 = require("./reportes/reportes.module");
 const nomina_module_1 = require("./nomina/nomina.module");
+const academico_module_1 = require("./academico/academico.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, empleados_module_1.EmpleadosModule, validacion_module_1.ValidacionModule, reportes_module_1.ReportesModule, nomina_module_1.NominaModule],
+        imports: [auth_module_1.AuthModule, empleados_module_1.EmpleadosModule, validacion_module_1.ValidacionModule, reportes_module_1.ReportesModule, nomina_module_1.NominaModule, academico_module_1.AcademicoModule],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })
