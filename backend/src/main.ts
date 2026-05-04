@@ -6,13 +6,12 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 🔥 CORS (IMPORTANTE para React)
   app.enableCors({
     origin: ['http://localhost:5173'], // frontend
     credentials: true,
   });
 
-  // 🔥 VALIDACIONES GLOBALES
+ 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -20,7 +19,7 @@ async function bootstrap() {
     }),
   );
 
-  // 🔥 SWAGGER
+
   const config = new DocumentBuilder()
     .setTitle('Sistema RRHH y Nómina')
     .setDescription('API del sistema de gestión de RRHH')
