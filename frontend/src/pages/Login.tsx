@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios';
 import toast from 'react-hot-toast';
+import api from '../api/axios';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -20,72 +20,89 @@ export default function Login() {
       const res = await api.post('/auth/login', {
         correo,
         contrasena,
+        rol,
       });
 
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', rol);
+      const token = res.data.access_token || res.data.token;
+      const rolUsuario = (res.data.rol || rol).toLowerCase();
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', rolUsuario);
       localStorage.setItem('correo', correo);
 
       toast.success('Inicio de sesión correcto');
 
       navigate('/home');
-    } catch (error) {
-      toast.error('Credenciales incorrectas');
+    } catch {
+      toast.error('Credenciales incorrectas o rol incorrecto');
     } finally {
       setCargando(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-700">
-      <form
-        onSubmit={iniciarSesion}
-        className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md"
-      >
-        <h1 className="text-3xl font-bold text-center text-blue-700 mb-6">
-          Sistema RRHH
-        </h1>
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-blue-500/20 bg-slate-900/80 p-8 shadow-2xl shadow-blue-950/30">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-white">Sistema RRHH</h1>
+          <p className="mt-2 text-sm text-slate-400">
+            Inicia sesión con tu cuenta
+          </p>
+        </div>
 
-        <label className="block mb-2 font-semibold">Correo</label>
-        <input
-          type="email"
-          value={correo}
-          onChange={(e) => setCorreo(e.target.value)}
-          className="w-full border rounded-lg px-4 py-2 mb-4"
-          placeholder="admin@gmail.com"
-          required
-        />
+        <form onSubmit={iniciarSesion} className="space-y-5">
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-300">
+              Correo
+            </label>
+            <input
+              type="email"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-blue-500"
+              placeholder="correo@ejemplo.com"
+              required
+            />
+          </div>
 
-        <label className="block mb-2 font-semibold">Contraseña</label>
-        <input
-          type="password"
-          value={contrasena}
-          onChange={(e) => setContrasena(e.target.value)}
-          className="w-full border rounded-lg px-4 py-2 mb-4"
-          placeholder="********"
-          required
-        />
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-300">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-blue-500"
+              placeholder="********"
+              required
+            />
+          </div>
 
-        <label className="block mb-2 font-semibold">Rol</label>
-        <select
-          value={rol}
-          onChange={(e) => setRol(e.target.value)}
-          className="w-full border rounded-lg px-4 py-2 mb-6 bg-white"
-          required
-        >
-          <option value="admin">Administrador</option>
-          <option value="empleado">Empleado</option>
-          <option value="rrhh">Recursos Humanos</option>
-        </select>
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-300">
+              Rol
+            </label>
+            <select
+              value={rol}
+              onChange={(e) => setRol(e.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none transition focus:border-blue-500"
+            >
+              <option value="rrhh">RRHH</option>
+              <option value="admin">Admin</option>
+              <option value="empleado">Empleado</option>
+            </select>
+          </div>
 
-        <button
-          type="submit"
-          disabled={cargando}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-        >
-          {cargando ? 'Ingresando...' : 'Iniciar sesión'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={cargando}
+            className="w-full rounded-xl bg-blue-600 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {cargando ? 'Ingresando...' : 'Iniciar sesión'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

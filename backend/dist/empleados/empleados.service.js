@@ -15,9 +15,8 @@ const prisma_service_1 = require("../prisma/prisma.service");
 var EstadoLaboral;
 (function (EstadoLaboral) {
     EstadoLaboral["ACTIVO"] = "activo";
-    EstadoLaboral["INACTIVO"] = "inactivo";
     EstadoLaboral["SUSPENDIDO"] = "suspendido";
-    EstadoLaboral["DESPEDIDO"] = "despedido";
+    EstadoLaboral["RETIRADO"] = "retirado";
 })(EstadoLaboral || (exports.EstadoLaboral = EstadoLaboral = {}));
 let EmpleadosService = class EmpleadosService {
     prisma;
@@ -35,7 +34,8 @@ let EmpleadosService = class EmpleadosService {
                     : null,
                 direccion: dto.direccion,
                 telefono: dto.telefono,
-                salario: dto.salario,
+                email: dto.email,
+                salario: Number(dto.salario),
                 cargo: dto.cargo,
                 departamento: dto.departamento,
                 estado: EstadoLaboral.ACTIVO,
@@ -70,8 +70,9 @@ let EmpleadosService = class EmpleadosService {
                     ? new Date(dto.fechaNacimiento)
                     : undefined,
                 direccion: dto.direccion,
+                email: dto.email,
                 telefono: dto.telefono,
-                salario: dto.salario,
+                salario: dto.salario !== undefined ? Number(dto.salario) : undefined,
                 cargo: dto.cargo,
                 departamento: dto.departamento,
             },

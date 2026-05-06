@@ -15,6 +15,7 @@ model empleados {
   dpi                String               @unique @db.VarChar(20)
   fecha_nacimiento   DateTime?            @db.Date
   direccion          String?
+   email            String?
   telefono           String?              @db.VarChar(20)
   salario            Decimal              @db.Decimal(10, 2)
   cargo              String?              @db.VarChar(100)

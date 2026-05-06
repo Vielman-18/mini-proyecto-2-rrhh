@@ -1,51 +1,49 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 
+const links = [
+  { to: '/rrhh/dashboard', label: 'Dashboard' },
+  { to: '/rrhh/empleados', label: 'Empleados' },
+  { to: '/rrhh/nomina', label: 'Nómina' },
+  { to: '/rrhh/expedientes', label: 'Expedientes' },
+  { to: '/rrhh/reportes', label: 'Reportes' },
+];
+
 export default function Sidebar() {
   const navigate = useNavigate();
 
   const cerrarSesion = () => {
-    localStorage.removeItem('token');
+    localStorage.clear();
     navigate('/');
   };
 
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `block px-4 py-3 rounded-lg mb-2 ${
-      isActive
-        ? 'bg-blue-600 text-white'
-        : 'text-gray-700 hover:bg-gray-200'
-    }`;
-
   return (
-    <aside className="w-64 bg-white shadow-lg p-5">
-      <h1 className="text-2xl font-bold text-blue-700 mb-8">
-        RRHH System
-      </h1>
+    <aside className="min-h-screen w-64 border-r border-blue-500/10 bg-slate-900 p-5">
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-white">RRHH</h2>
+        <p className="text-sm text-slate-400">Panel administrativo</p>
+      </div>
 
-      <nav>
-        <NavLink to="/dashboard" className={linkClass}>
-          Dashboard
-        </NavLink>
-
-        <NavLink to="/empleados" className={linkClass}>
-          Empleados
-        </NavLink>
-
-        <NavLink to="/nomina" className={linkClass}>
-          Nómina
-        </NavLink>
-
-        <NavLink to="/expedientes" className={linkClass}>
-          Expedientes
-        </NavLink>
-
-        <NavLink to="/reportes" className={linkClass}>
-          Reportes
-        </NavLink>
+      <nav className="space-y-2">
+        {links.map((link) => (
+          <NavLink
+            key={link.to}
+            to={link.to}
+            className={({ isActive }) =>
+              `block rounded-xl px-4 py-3 text-sm font-medium transition ${
+                isActive
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`
+            }
+          >
+            {link.label}
+          </NavLink>
+        ))}
       </nav>
 
       <button
         onClick={cerrarSesion}
-        className="mt-8 w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600"
+        className="mt-8 w-full rounded-xl bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
       >
         Cerrar sesión
       </button>

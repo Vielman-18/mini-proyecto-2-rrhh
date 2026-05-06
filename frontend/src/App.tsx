@@ -5,67 +5,95 @@ import Empleados from './pages/Empleados';
 import Nomina from './pages/Nomina';
 import Expedientes from './pages/Expedientes';
 import Reportes from './pages/Reportes';
+
 import Sidebar from './components/Sidebar';
 
 import AdminHome from './pages/roles/AdminHome';
 import EmpleadoHome from './pages/roles/EmpleadoHome';
+import RRhhHome from './pages/roles/RRhhHome';
+
+function RoleRedirect() {
+  const role = localStorage.getItem('role')?.toLowerCase();
+
+  if (role === 'admin') return <Navigate to="/admin" replace />;
+  if (role === 'rrhh') return <Navigate to="/rrhh" replace />;
+  if (role === 'empleado') return <Navigate to="/empleado" replace />;
+
+  return <Navigate to="/" replace />;
+}
+
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
 
 function RRHHLayout() {
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100">
       <Sidebar />
 
       <main className="flex-1 p-6">
         <Routes>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/empleados" element={<Empleados />} />
-          <Route path="/nomina" element={<Nomina />} />
-          <Route path="/expedientes" element={<Expedientes />} />
-          <Route path="/reportes" element={<Reportes />} />
-          <Route path="*" element={<Navigate to="/dashboard" />} />
+          <Route index element={<RRhhHome />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="empleados" element={<Empleados />} />
+          <Route path="nomina" element={<Nomina />} />
+          <Route path="expedientes" element={<Expedientes />} />
+          <Route path="reportes" element={<Reportes />} />
+          <Route path="*" element={<Navigate to="/rrhh" replace />} />
         </Routes>
       </main>
     </div>
   );
 }
 
-function RoleRedirect() {
-  const role = localStorage.getItem('role');
-
-  if (role === 'admin') {
-    return <Navigate to="/admin" />;
-  }
-
-  if (role === 'empleado') {
-    return <Navigate to="/empleado" />;
-  }
-
-  if (role === 'rrhh') {
-    return <Navigate to="/dashboard" />;
-  }
-
-  return <Navigate to="/" />;
-}
-
 export default function App() {
-  const token = localStorage.getItem('token');
-
   return (
     <Routes>
       <Route path="/" element={<Login />} />
 
-      {!token ? (
-        <Route path="*" element={<Navigate to="/" />} />
-      ) : (
-        <>
-          <Route path="/home" element={<RoleRedirect />} />
+      <Route
+        path="/home"
+        element={
+          <PrivateRoute>
+            <RoleRedirect />
+          </PrivateRoute>
+        }
+      />
 
-          <Route path="/admin" element={<AdminHome />} />
-          <Route path="/empleado" element={<EmpleadoHome />} />
+      <Route
+        path="/admin"
+        element={
+          <PrivateRoute>
+            <AdminHome />
+          </PrivateRoute>
+        }
+      />
 
-          <Route path="/*" element={<RRHHLayout />} />
-        </>
-      )}
+      <Route
+        path="/empleado"
+        element={
+          <PrivateRoute>
+            <EmpleadoHome />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/rrhh/*"
+        element={
+          <PrivateRoute>
+            <RRHHLayout />
+          </PrivateRoute>
+        }
+      />
+
+      <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
   );
 }
