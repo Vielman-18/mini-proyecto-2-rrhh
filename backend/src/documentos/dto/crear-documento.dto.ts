@@ -16,4 +16,7 @@ export class CrearDocumentoDto {
   @IsNotEmpty()
   @IsString()
   tipo_documento!: string;
+
+
+
 }
