@@ -39,6 +39,9 @@ type DetalleNomina = {
   empleados?: Empleado;
 };
 
+const inputClass =
+  'w-full rounded-2xl border border-cyan-400/15 bg-black/40 px-5 py-4 text-white outline-none placeholder:text-slate-600 transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/10';
+
 export default function Nomina() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [nominas, setNominas] = useState<Nomina[]>([]);
@@ -75,7 +78,6 @@ export default function Nomina() {
     salarioBase + montoHorasExtra + bonificaciones + comisiones;
 
   const subtotalDeducciones = deducciones + descuentosLegales;
-
   const totalEstimado = subtotalIngresos - subtotalDeducciones;
 
   const resumen = useMemo(() => {
@@ -103,6 +105,17 @@ export default function Nomina() {
     return { totalPlanilla, totalBonos, totalDeducciones };
   }, [detalles]);
 
+  const cargarDetalles = async (id: string) => {
+    if (!id) return;
+
+    try {
+      const res = await api.get(`/nomina/${id}/detalle`);
+      setDetalles(res.data);
+    } catch {
+      setDetalles([]);
+    }
+  };
+
   const cargarDatos = async () => {
     try {
       const [empRes, nomRes] = await Promise.all([
@@ -120,17 +133,6 @@ export default function Nomina() {
       }
     } catch {
       toast.error('Error al cargar información');
-    }
-  };
-
-  const cargarDetalles = async (id: string) => {
-    if (!id) return;
-
-    try {
-      const res = await api.get(`/nomina/${id}/detalle`);
-      setDetalles(res.data);
-    } catch {
-      setDetalles([]);
     }
   };
 
@@ -228,26 +230,41 @@ export default function Nomina() {
   };
 
   return (
-    <div className="space-y-8 text-white">
-      <section className="overflow-hidden rounded-3xl border border-blue-500/10 bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-8 shadow-2xl">
-        <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.3em] text-blue-400">
-              Recursos Humanos
-            </p>
-            <h1 className="mt-2 text-4xl font-black">Módulo de Nómina</h1>
-            <p className="mt-3 max-w-3xl text-slate-400">
-              Administra períodos, calcula salarios y consulta el desglose de
-              pagos por empleado.
-            </p>
+    <div className="min-h-screen space-y-8 bg-slate-950 p-6 text-white">
+      <section className="relative overflow-hidden rounded-[2.5rem] border border-cyan-400/20 bg-slate-900/80 p-8 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.14),transparent_32%)]" />
+
+        <div className="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+          <div className="flex items-center gap-5">
+            <div className="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-cyan-400/30 bg-cyan-400/10 shadow-lg shadow-cyan-500/20">
+              <span className="text-3xl font-black text-cyan-300">UMG</span>
+            </div>
+
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.4em] text-cyan-300">
+                Universidad Mariano Gálvez
+              </p>
+
+              <h1 className="mt-2 text-5xl font-black tracking-tight text-white">
+                Módulo de Nómina
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
+                Control de períodos, cálculo de pagos, bonos, deducciones y detalle salarial.
+              </p>
+            </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-            <p className="text-sm text-slate-400">Nómina activa</p>
-            <p className="mt-1 text-2xl font-black text-white">
+          <div className="rounded-3xl border border-cyan-400/20 bg-black/30 px-6 py-5">
+            <p className="text-xs uppercase tracking-widest text-slate-500">
+              Nómina activa
+            </p>
+
+            <p className="mt-2 text-2xl font-black text-cyan-300">
               {nominaSeleccionada?.periodo || 'Sin seleccionar'}
             </p>
-            <p className="mt-1 text-sm capitalize text-blue-300">
+
+            <p className="mt-1 text-sm capitalize text-slate-400">
               {nominaSeleccionada
                 ? `${nominaSeleccionada.tipo_periodo} · ${nominaSeleccionada.estado}`
                 : 'Selecciona una nómina'}
@@ -256,262 +273,221 @@ export default function Nomina() {
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-4">
-        <Card titulo="Total planilla" valor={quetzal(resumen.totalPlanilla)} />
-        <Card titulo="Bonos y comisiones" valor={quetzal(resumen.totalBonos)} />
-        <Card titulo="Deducciones" valor={quetzal(resumen.totalDeducciones)} />
-        <Card titulo="Empleados incluidos" valor={String(detalles.length)} />
+      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        <Card title="Total planilla" value={quetzal(resumen.totalPlanilla)} color="cyan" />
+        <Card title="Bonos y comisiones" value={quetzal(resumen.totalBonos)} color="emerald" />
+        <Card title="Deducciones" value={quetzal(resumen.totalDeducciones)} color="red" />
+        <Card title="Empleados incluidos" value={String(detalles.length)} color="violet" />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-12">
-        <div className="xl:col-span-4">
-          <Panel
-            paso="01"
-            titulo="Crear período"
-            descripcion="Crea una nómina mensual o quincenal antes de agregar empleados."
-          >
-            <div className="space-y-4">
-              <Campo label="Tipo de período">
-                <select
-                  value={tipoPeriodo}
-                  onChange={(e) => setTipoPeriodo(e.target.value)}
-                  className="input"
-                >
-                  <option value="mensual">Mensual</option>
-                  <option value="quincenal">Quincenal</option>
-                </select>
-              </Campo>
-
-              <Campo label="Período">
-                <input
-                  value={periodo}
-                  onChange={(e) => setPeriodo(e.target.value)}
-                  placeholder="Ej: 2026-04"
-                  className="input"
-                />
-              </Campo>
-
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
-                <Campo label="Fecha inicio">
-                  <input
-                    type="date"
-                    value={fechaInicio}
-                    onChange={(e) => setFechaInicio(e.target.value)}
-                    className="input"
-                  />
-                </Campo>
-
-                <Campo label="Fecha fin">
-                  <input
-                    type="date"
-                    value={fechaFin}
-                    onChange={(e) => setFechaFin(e.target.value)}
-                    className="input"
-                  />
-                </Campo>
-              </div>
-
-              <button
-                onClick={crearNomina}
-                disabled={loading}
-                className="w-full rounded-2xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:opacity-60"
+        <Panel className="xl:col-span-4" tag="Paso 01" title="Crear período">
+          <div className="space-y-5">
+            <Field label="Tipo de período">
+              <select
+                value={tipoPeriodo}
+                onChange={(e) => setTipoPeriodo(e.target.value)}
+                className={inputClass}
               >
-                Crear período
-              </button>
-            </div>
-          </Panel>
-        </div>
+                <option value="mensual">Mensual</option>
+                <option value="quincenal">Quincenal</option>
+              </select>
+            </Field>
 
-        <div className="xl:col-span-8">
-          <Panel
-            paso="02"
-            titulo="Manipular nómina"
-            descripcion="Selecciona una nómina existente y agrega empleados activos con sus conceptos salariales."
-          >
-            <div className="mb-6 rounded-3xl border border-slate-800 bg-slate-900/60 p-5">
-              <Campo label="Seleccionar nómina">
-                <select
-                  value={nominaId}
-                  onChange={(e) => cambiarNomina(e.target.value)}
-                  className="input"
-                >
-                  <option value="">Seleccionar nómina</option>
-                  {nominas.map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.periodo} - {n.tipo_periodo} - {n.estado}
-                    </option>
-                  ))}
-                </select>
-              </Campo>
+            <Field label="Período">
+              <input
+                value={periodo}
+                onChange={(e) => setPeriodo(e.target.value)}
+                placeholder="Ej: 2026-04"
+                className={inputClass}
+              />
+            </Field>
 
-              {nominaSeleccionada && (
-                <div className="mt-5 grid gap-3 md:grid-cols-4">
-                  <MiniInfo label="Tipo" value={nominaSeleccionada.tipo_periodo} />
-                  <MiniInfo label="Estado" value={nominaSeleccionada.estado} />
-                  <MiniInfo
-                    label="Inicio"
-                    value={fechaGT(nominaSeleccionada.fecha_inicio)}
-                  />
-                  <MiniInfo
-                    label="Fin"
-                    value={fechaGT(nominaSeleccionada.fecha_fin)}
-                  />
-                </div>
-              )}
-            </div>
+            <Field label="Fecha inicio">
+              <input
+                type="date"
+                value={fechaInicio}
+                onChange={(e) => setFechaInicio(e.target.value)}
+                className={inputClass}
+              />
+            </Field>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-5">
-                <h3 className="text-lg font-black">Datos del empleado</h3>
+            <Field label="Fecha fin">
+              <input
+                type="date"
+                value={fechaFin}
+                onChange={(e) => setFechaFin(e.target.value)}
+                className={inputClass}
+              />
+            </Field>
 
-                <div className="mt-5 space-y-4">
-                  <Campo label="Empleado activo">
-                    <select
-                      value={empleadoId}
-                      onChange={(e) => setEmpleadoId(e.target.value)}
-                      className="input"
-                    >
-                      <option value="">Seleccionar empleado</option>
-                      {empleados.map((e) => (
-                        <option key={e.id} value={e.id}>
-                          {e.nombres} {e.apellidos}
-                        </option>
-                      ))}
-                    </select>
-                  </Campo>
+            <button
+              type="button"
+              onClick={crearNomina}
+              disabled={loading}
+              className="w-full rounded-2xl border border-cyan-300/30 bg-cyan-400 px-5 py-4 font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? 'Procesando...' : 'Crear período'}
+            </button>
+          </div>
+        </Panel>
 
-                  {empleadoSeleccionado && (
-                    <div className="rounded-2xl border border-blue-500/10 bg-blue-500/5 p-4">
-                      <p className="font-bold text-white">
-                        {empleadoSeleccionado.nombres}{' '}
-                        {empleadoSeleccionado.apellidos}
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        {empleadoSeleccionado.cargo || 'Sin cargo'} ·{' '}
-                        {empleadoSeleccionado.departamento || 'Sin departamento'}
-                      </p>
-                      <p className="mt-2 text-lg font-black text-emerald-400">
-                        {quetzal(salarioBase)}
-                      </p>
-                    </div>
-                  )}
-
-                  <Input
-                    label="Horas trabajadas"
-                    value={horasTrabajadas}
-                    setValue={setHorasTrabajadas}
-                  />
-                  <Input
-                    label="Horas extra"
-                    value={horasExtra}
-                    setValue={setHorasExtra}
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-5">
-                <h3 className="text-lg font-black">Conceptos salariales</h3>
-
-                <div className="mt-5 space-y-4">
-                  <Input
-                    label="Bonificaciones"
-                    value={bonificaciones}
-                    setValue={setBonificaciones}
-                  />
-                  <Input
-                    label="Comisiones"
-                    value={comisiones}
-                    setValue={setComisiones}
-                  />
-                  <Input
-                    label="Deducciones"
-                    value={deducciones}
-                    setValue={setDeducciones}
-                  />
-                  <Input
-                    label="Descuentos legales"
-                    value={descuentosLegales}
-                    setValue={setDescuentosLegales}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-3xl border border-blue-500/10 bg-slate-950 p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="font-black">Vista previa del cálculo</h3>
-                <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-bold text-blue-300">
-                  IGSS / IRTRA se calculan en backend
-                </span>
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-3">
-                <Resumen label="Salario base" value={quetzal(salarioBase)} />
-                <Resumen label="Pago hora" value={quetzal(pagoHora)} />
-                <Resumen label="Monto extra" value={quetzal(montoHorasExtra)} />
-                <Resumen label="Ingresos" value={quetzal(subtotalIngresos)} />
-                <Resumen
-                  label="Deducciones manuales"
-                  value={quetzal(subtotalDeducciones)}
-                />
-                <Resumen
-                  label="Total estimado"
-                  value={quetzal(totalEstimado)}
-                  strong
-                />
-              </div>
-
-              <button
-                onClick={agregarDetalle}
-                disabled={loading}
-                className="mt-6 rounded-2xl bg-emerald-600 px-6 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60"
+        <Panel className="xl:col-span-8" tag="Paso 02" title="Manipular nómina">
+          <div className="mb-6 rounded-[1.7rem] border border-cyan-400/15 bg-black/30 p-5">
+            <Field label="Seleccionar nómina">
+              <select
+                value={nominaId}
+                onChange={(e) => cambiarNomina(e.target.value)}
+                className={inputClass}
               >
-                Agregar empleado a nómina
-              </button>
+                <option value="">Seleccionar nómina</option>
+                {nominas.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.periodo} - {n.tipo_periodo} - {n.estado}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            {nominaSeleccionada && (
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <MiniInfo label="Tipo" value={nominaSeleccionada.tipo_periodo} />
+                <MiniInfo label="Estado" value={nominaSeleccionada.estado} />
+                <MiniInfo label="Inicio" value={fechaGT(nominaSeleccionada.fecha_inicio)} />
+                <MiniInfo label="Fin" value={fechaGT(nominaSeleccionada.fecha_fin)} />
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-[1.7rem] border border-cyan-400/15 bg-black/30 p-5">
+              <h3 className="text-lg font-black text-white">Datos del empleado</h3>
+
+              <div className="mt-5 space-y-4">
+                <Field label="Empleado activo">
+                  <select
+                    value={empleadoId}
+                    onChange={(e) => setEmpleadoId(e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Seleccionar empleado</option>
+                    {empleados.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.nombres} {e.apellidos}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                {empleadoSeleccionado && (
+                  <div className="rounded-3xl border border-emerald-400/20 bg-emerald-400/10 p-5">
+                    <p className="font-black text-white">
+                      {empleadoSeleccionado.nombres} {empleadoSeleccionado.apellidos}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-400">
+                      {empleadoSeleccionado.cargo || 'Sin cargo'} ·{' '}
+                      {empleadoSeleccionado.departamento || 'Sin departamento'}
+                    </p>
+                    <p className="mt-3 text-2xl font-black text-emerald-300">
+                      {quetzal(salarioBase)}
+                    </p>
+                  </div>
+                )}
+
+                <NumberInput label="Horas trabajadas" value={horasTrabajadas} setValue={setHorasTrabajadas} />
+                <NumberInput label="Horas extra" value={horasExtra} setValue={setHorasExtra} />
+              </div>
             </div>
-          </Panel>
-        </div>
+
+            <div className="rounded-[1.7rem] border border-violet-400/15 bg-black/30 p-5">
+              <h3 className="text-lg font-black text-white">Conceptos salariales</h3>
+
+              <div className="mt-5 space-y-4">
+                <NumberInput label="Bonificaciones" value={bonificaciones} setValue={setBonificaciones} />
+                <NumberInput label="Comisiones" value={comisiones} setValue={setComisiones} />
+                <NumberInput label="Deducciones" value={deducciones} setValue={setDeducciones} />
+                <NumberInput label="Descuentos legales" value={descuentosLegales} setValue={setDescuentosLegales} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-[1.8rem] border border-cyan-400/15 bg-slate-950/80 p-5">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">
+                  UMG Preview
+                </p>
+                <h3 className="mt-1 text-xl font-black">Vista previa del cálculo</h3>
+              </div>
+
+              <span className="w-fit rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs font-bold text-cyan-300">
+                IGSS / IRTRA en backend
+              </span>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <Resumen label="Salario base" value={quetzal(salarioBase)} />
+              <Resumen label="Pago hora" value={quetzal(pagoHora)} />
+              <Resumen label="Monto extra" value={quetzal(montoHorasExtra)} />
+              <Resumen label="Ingresos" value={quetzal(subtotalIngresos)} />
+              <Resumen label="Deducciones manuales" value={quetzal(subtotalDeducciones)} />
+              <Resumen label="Total estimado" value={quetzal(totalEstimado)} strong />
+            </div>
+
+            <button
+              type="button"
+              onClick={agregarDetalle}
+              disabled={loading}
+              className="mt-6 rounded-2xl border border-emerald-300/30 bg-emerald-400 px-6 py-4 font-black text-slate-950 shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? 'Procesando...' : 'Agregar empleado a nómina'}
+            </button>
+          </div>
+        </Panel>
       </section>
 
-      <section className="rounded-3xl border border-slate-800 bg-slate-950/90 p-6 shadow-xl">
-        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+      <section className="overflow-hidden rounded-[2rem] border border-cyan-400/15 bg-slate-900/80 shadow-2xl shadow-black/30 backdrop-blur-xl">
+        <div className="flex flex-col gap-4 border-b border-cyan-400/10 p-6 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.25em] text-blue-400">
-              Paso 03
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">
+              Paso 03 · UMG Nómina
             </p>
-            <h2 className="mt-1 text-xl font-black">Detalle de nómina</h2>
-            <p className="text-sm text-slate-400">
-              Empleados incluidos en la nómina seleccionada.
+            <h2 className="mt-2 text-2xl font-black text-white">
+              Detalle de nómina
+            </h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Empleados incluidos en el período seleccionado.
             </p>
           </div>
 
           <button
+            type="button"
             onClick={() => nominaId && cargarDetalles(nominaId)}
-            className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-900"
+            className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 px-5 py-3 text-sm font-bold text-cyan-300 transition hover:bg-cyan-400/20"
           >
             Actualizar detalle
           </button>
         </div>
 
         {detalles.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-700 p-10 text-center text-slate-400">
+          <div className="m-6 rounded-3xl border border-dashed border-slate-700 bg-black/30 p-10 text-center text-slate-500">
             No hay empleados agregados a esta nómina.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-left text-sm">
-              <thead className="text-slate-400">
-                <tr className="border-b border-slate-800">
-                  <th className="px-4 py-3">Empleado</th>
-                  <th className="px-4 py-3">Salario</th>
-                  <th className="px-4 py-3">H. Extra</th>
-                  <th className="px-4 py-3">Monto Extra</th>
-                  <th className="px-4 py-3">Bonos</th>
-                  <th className="px-4 py-3">Comisiones</th>
-                  <th className="px-4 py-3">Deducciones</th>
-                  <th className="px-4 py-3">IGSS</th>
-                  <th className="px-4 py-3">IRTRA</th>
-                  <th className="px-4 py-3">Total</th>
+            <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-cyan-400/10 bg-cyan-400/[0.04] text-xs uppercase tracking-widest text-slate-500">
+                  <th className="px-5 py-4">Empleado</th>
+                  <th className="px-5 py-4">Salario</th>
+                  <th className="px-5 py-4">H. Extra</th>
+                  <th className="px-5 py-4">Monto Extra</th>
+                  <th className="px-5 py-4">Bonos</th>
+                  <th className="px-5 py-4">Comisiones</th>
+                  <th className="px-5 py-4">Deducciones</th>
+                  <th className="px-5 py-4">IGSS</th>
+                  <th className="px-5 py-4">IRTRA</th>
+                  <th className="px-5 py-4">Total</th>
                 </tr>
               </thead>
 
@@ -519,22 +495,22 @@ export default function Nomina() {
                 {detalles.map((d) => (
                   <tr
                     key={d.id}
-                    className="border-b border-slate-900 text-slate-300 hover:bg-slate-900/60"
+                    className="border-b border-cyan-400/5 text-slate-300 transition hover:bg-cyan-400/[0.04]"
                   >
-                    <td className="px-4 py-4 font-semibold text-white">
+                    <td className="px-5 py-5 font-bold text-white">
                       {d.empleados
                         ? `${d.empleados.nombres} ${d.empleados.apellidos}`
                         : `Empleado #${d.empleado_id}`}
                     </td>
-                    <td className="px-4 py-4">{quetzal(d.salario_base)}</td>
-                    <td className="px-4 py-4">{Number(d.horas_extra || 0)}</td>
-                    <td className="px-4 py-4">{quetzal(d.monto_horas_extra)}</td>
-                    <td className="px-4 py-4">{quetzal(d.bonificaciones)}</td>
-                    <td className="px-4 py-4">{quetzal(d.comisiones)}</td>
-                    <td className="px-4 py-4">{quetzal(d.deducciones)}</td>
-                    <td className="px-4 py-4">{quetzal(d.igss)}</td>
-                    <td className="px-4 py-4">{quetzal(d.irtra)}</td>
-                    <td className="px-4 py-4 text-lg font-black text-emerald-400">
+                    <td className="px-5 py-5">{quetzal(d.salario_base)}</td>
+                    <td className="px-5 py-5">{Number(d.horas_extra || 0)}</td>
+                    <td className="px-5 py-5">{quetzal(d.monto_horas_extra)}</td>
+                    <td className="px-5 py-5 text-emerald-300">{quetzal(d.bonificaciones)}</td>
+                    <td className="px-5 py-5 text-emerald-300">{quetzal(d.comisiones)}</td>
+                    <td className="px-5 py-5 text-red-300">{quetzal(d.deducciones)}</td>
+                    <td className="px-5 py-5">{quetzal(d.igss)}</td>
+                    <td className="px-5 py-5">{quetzal(d.irtra)}</td>
+                    <td className="px-5 py-5 text-lg font-black text-cyan-300">
                       {quetzal(d.salario_final)}
                     </td>
                   </tr>
@@ -548,23 +524,62 @@ export default function Nomina() {
   );
 }
 
-function Panel({ paso, titulo, descripcion, children }: any) {
+function Card({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: string;
+  color: 'cyan' | 'emerald' | 'red' | 'violet';
+}) {
+  const colors = {
+    cyan: 'border-cyan-400/20 text-cyan-300',
+    emerald: 'border-emerald-400/20 text-emerald-300',
+    red: 'border-red-400/20 text-red-300',
+    violet: 'border-violet-400/20 text-violet-300',
+  };
+
   return (
-    <section className="rounded-3xl border border-slate-800 bg-slate-950/90 p-6 shadow-xl">
-      <p className="text-sm font-bold uppercase tracking-[0.25em] text-blue-400">
-        Paso {paso}
+    <div className={`rounded-[1.7rem] border bg-slate-900/80 p-5 shadow-lg shadow-black/30 backdrop-blur-xl ${colors[color]}`}>
+      <p className="text-sm text-slate-400">{title}</p>
+      <p className={`mt-3 text-3xl font-black ${colors[color]}`}>{value}</p>
+    </div>
+  );
+}
+
+function Panel({
+  tag,
+  title,
+  children,
+  className = '',
+}: {
+  tag: string;
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`rounded-[2rem] border border-cyan-400/15 bg-slate-900/80 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl ${className}`}>
+      <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">
+        {tag}
       </p>
-      <h2 className="mt-1 text-xl font-black text-white">{titulo}</h2>
-      <p className="mt-1 mb-6 text-sm text-slate-400">{descripcion}</p>
+      <h2 className="mb-6 mt-2 text-2xl font-black text-white">{title}</h2>
       {children}
     </section>
   );
 }
 
-function Campo({ label, children }: any) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-300">
+      <label className="mb-2 block text-sm font-bold text-slate-300">
         {label}
       </label>
       {children}
@@ -572,32 +587,31 @@ function Campo({ label, children }: any) {
   );
 }
 
-function Input({ label, value, setValue }: any) {
+function NumberInput({
+  label,
+  value,
+  setValue,
+}: {
+  label: string;
+  value: number;
+  setValue: (value: number) => void;
+}) {
   return (
-    <Campo label={label}>
+    <Field label={label}>
       <input
         type="number"
         min="0"
         value={value}
         onChange={(e) => setValue(Number(e.target.value))}
-        className="input"
+        className={inputClass}
       />
-    </Campo>
+    </Field>
   );
 }
 
-function Card({ titulo, valor }: any) {
+function MiniInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-6 shadow-xl">
-      <p className="text-sm text-slate-400">{titulo}</p>
-      <p className="mt-2 text-2xl font-black text-white">{valor}</p>
-    </div>
-  );
-}
-
-function MiniInfo({ label, value }: any) {
-  return (
-    <div className="rounded-2xl bg-slate-950 p-4">
+    <div className="rounded-2xl border border-cyan-400/10 bg-slate-950/80 p-4">
       <p className="text-xs uppercase tracking-widest text-slate-500">
         {label}
       </p>
@@ -606,15 +620,19 @@ function MiniInfo({ label, value }: any) {
   );
 }
 
-function Resumen({ label, value, strong }: any) {
+function Resumen({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-4 py-3">
+    <div className="flex items-center justify-between rounded-2xl border border-cyan-400/10 bg-black/30 px-4 py-3">
       <span className="text-slate-400">{label}</span>
-      <span
-        className={
-          strong ? 'font-black text-emerald-400' : 'font-bold text-blue-400'
-        }
-      >
+      <span className={strong ? 'font-black text-emerald-300' : 'font-bold text-cyan-300'}>
         {value}
       </span>
     </div>

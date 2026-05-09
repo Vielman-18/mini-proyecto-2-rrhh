@@ -21,18 +21,18 @@ let DocumentosService = class DocumentosService {
         if (!file) {
             throw new common_1.BadRequestException('Debe subir un archivo PDF');
         }
-        return await this.prisma.documentos.create({
+        return this.prisma.documentos.create({
             data: {
                 empleado_id: Number(body.empleado_id),
                 usuario_id: Number(body.usuario_id),
                 nombre_archivo: file.originalname,
-                ruta_archivo: file.path,
+                ruta_archivo: file.originalname,
                 tipo_documento: body.tipo_documento,
             },
         });
     }
     async listarPorEmpleado(empleadoId) {
-        return await this.prisma.documentos.findMany({
+        return this.prisma.documentos.findMany({
             where: {
                 empleado_id: empleadoId,
             },
