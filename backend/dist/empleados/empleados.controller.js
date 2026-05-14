@@ -15,28 +15,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmpleadosController = void 0;
 const common_1 = require("@nestjs/common");
 const empleados_service_1 = require("./empleados.service");
-class CrearEmpleadoDto {
-    nombres;
-    apellidos;
-    fechaNacimiento;
-    direccion;
-    telefono;
-    email;
-    dpi;
-    salario;
-    cargo;
-    departamento;
-}
-class CambiarEstadoDto {
-    estado;
-}
+const crear_empleado_dto_1 = require("./dto/crear-empleado.dto");
+const actualizar_empleado_dto_1 = require("./dto/actualizar-empleado.dto");
+const cambiar_estado_dto_1 = require("./dto/cambiar-estado.dto");
 let EmpleadosController = class EmpleadosController {
     empleadosService;
     constructor(empleadosService) {
         this.empleadosService = empleadosService;
     }
-    crear(data) {
-        return this.empleadosService.crear(data);
+    crear(dto) {
+        return this.empleadosService.crear(dto);
     }
     listar() {
         return this.empleadosService.listar();
@@ -44,8 +32,8 @@ let EmpleadosController = class EmpleadosController {
     buscarPorId(id) {
         return this.empleadosService.buscarPorId(id);
     }
-    actualizar(id, data) {
-        return this.empleadosService.actualizar(id, data);
+    actualizar(id, dto) {
+        return this.empleadosService.actualizar(id, dto);
     }
     eliminar(id) {
         return this.empleadosService.eliminar(id);
@@ -59,7 +47,7 @@ __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [CrearEmpleadoDto]),
+    __metadata("design:paramtypes", [crear_empleado_dto_1.CrearEmpleadoDto]),
     __metadata("design:returntype", void 0)
 ], EmpleadosController.prototype, "crear", null);
 __decorate([
@@ -80,7 +68,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Number, actualizar_empleado_dto_1.ActualizarEmpleadoDto]),
     __metadata("design:returntype", void 0)
 ], EmpleadosController.prototype, "actualizar", null);
 __decorate([
@@ -95,7 +83,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, CambiarEstadoDto]),
+    __metadata("design:paramtypes", [Number, cambiar_estado_dto_1.CambiarEstadoDto]),
     __metadata("design:returntype", void 0)
 ], EmpleadosController.prototype, "cambiarEstado", null);
 exports.EmpleadosController = EmpleadosController = __decorate([
