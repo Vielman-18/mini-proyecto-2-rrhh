@@ -21,7 +21,7 @@ model empleados {
   departamento       String?              @db.VarChar(100)
   estado             String               @default("activo") @db.VarChar(20)
   fecha_creacion     DateTime?            @default(now()) @db.Timestamp(6)
-  email              String?
+  email              String?              @db.VarChar(90)
   detalle_nomina     detalle_nomina[]
   documentos         documentos[]
   usuarios           usuarios?            @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_empleado_usuario")
