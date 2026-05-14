@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsEmail,
   IsNumber,
+  IsInt,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -31,9 +32,9 @@ export class ActualizarEmpleadoDto {
   @IsString()
   telefono?: string;
 
-  @IsOptional()
+  
   @IsEmail()
-  email?: string;
+  email!: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -41,10 +42,12 @@ export class ActualizarEmpleadoDto {
   salario?: number;
 
   @IsOptional()
-  @IsString()
-  cargo?: string;
+  @Type(() => Number)
+  @IsInt()
+  departamento_id?: number;
 
   @IsOptional()
-  @IsString()
-  departamento?: string;
+  @Type(() => Number)
+  @IsInt()
+  puesto_id?: number;
 }

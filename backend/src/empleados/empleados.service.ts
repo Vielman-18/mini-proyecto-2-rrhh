@@ -24,10 +24,11 @@ export class EmpleadosService {
           : null,
         direccion: dto.direccion,
         telefono: dto.telefono,
-        email: dto.email,
+       email: dto.email, 
+       
        salario: Number(dto.salario),
-        cargo: dto.cargo,
-        departamento: dto.departamento,
+       puesto_id: dto.puesto_id,
+        departamento_id: dto.departamento_id,
         estado: EstadoLaboral.ACTIVO,
       },
     });
@@ -69,8 +70,8 @@ export class EmpleadosService {
         email: dto.email,
         telefono: dto.telefono,
         salario: dto.salario !== undefined ? Number(dto.salario) : undefined,
-        cargo: dto.cargo,
-        departamento: dto.departamento,
+        puesto_id: dto.puesto_id,
+        departamento_id: dto.departamento_id,
       },
     });
   }

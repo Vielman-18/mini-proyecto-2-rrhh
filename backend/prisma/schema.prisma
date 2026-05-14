@@ -10,20 +10,22 @@ datasource db {
 model empleados {
   id                 Int                  @id @default(autoincrement())
   usuario_id         Int?                 @unique
-  nombres            String               @db.VarChar(100)
+  departamento_id    Int?
+  puesto_id          Int?
+  email              String               @db.VarChar(150)
+  nombres            String               @unique.VarChar(100)
   apellidos          String               @db.VarChar(100)
   dpi                String               @unique @db.VarChar(20)
   fecha_nacimiento   DateTime?            @db.Date
   direccion          String?
   telefono           String?              @db.VarChar(20)
   salario            Decimal              @db.Decimal(10, 2)
-  cargo              String?              @db.VarChar(100)
-  departamento       String?              @db.VarChar(100)
   estado             String               @default("activo") @db.VarChar(20)
   fecha_creacion     DateTime?            @default(now()) @db.Timestamp(6)
-  email              String?              @db.VarChar(90)
   detalle_nomina     detalle_nomina[]
   documentos         documentos[]
+  departamentos      departamentos?       @relation(fields: [departamento_id], references: [id], onUpdate: NoAction, map: "fk_empleado_departamento")
+  puestos            puestos?             @relation(fields: [puesto_id], references: [id], onUpdate: NoAction, map: "fk_empleado_puesto")
   usuarios           usuarios?            @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_empleado_usuario")
   estado_expediente  estado_expediente?
   registro_academico registro_academico[]
@@ -123,6 +125,36 @@ model usuarios {
   rol            String           @db.VarChar(20)
   fecha_creacion DateTime?        @default(now()) @db.Timestamp(6)
   ajustes_nomina ajustes_nomina[]
+  departamentos  departamentos[]
   documentos     documentos[]
   empleados      empleados?
+  puestos        puestos[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model departamentos {
+  id             Int         @id @default(autoincrement())
+  nombre         String      @unique @db.VarChar(100)
+  descripcion    String?
+  estado         String      @default("activo") @db.VarChar(20)
+  creado_por     Int
+  fecha_creacion DateTime?   @default(now()) @db.Timestamp(6)
+  usuarios       usuarios    @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_departamento_usuario")
+  empleados      empleados[]
+  puestos        puestos[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model puestos {
+  id              Int           @id @default(autoincrement())
+  departamento_id Int
+  nombre          String        @db.VarChar(100)
+  descripcion     String?
+  salario_base    Decimal?      @db.Decimal(10, 2)
+  estado          String        @default("activo") @db.VarChar(20)
+  creado_por      Int
+  fecha_creacion  DateTime?     @default(now()) @db.Timestamp(6)
+  empleados       empleados[]
+  departamentos   departamentos @relation(fields: [departamento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_puesto_departamento")
+  usuarios        usuarios      @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_puesto_usuario")
 }
