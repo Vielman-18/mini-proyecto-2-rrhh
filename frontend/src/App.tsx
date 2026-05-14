@@ -5,6 +5,7 @@ import Empleados from './pages/Empleados';
 import Nomina from './pages/Nomina';
 import Expedientes from './pages/Expedientes';
 import Reportes from './pages/Reportes';
+import Academico from './pages/Academico.tsx';
 
 import Sidebar from './components/Sidebar';
 
@@ -31,13 +32,12 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
   return children;
 }
-
 function RRHHLayout() {
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen w-full overflow-hidden bg-slate-950 text-slate-100">
       <Sidebar />
 
-      <main className="flex-1 p-6">
+      <main className="min-w-0 flex-1 overflow-x-hidden p-6">
         <Routes>
           <Route index element={<RRhhHome />} />
           <Route path="dashboard" element={<Dashboard />} />
@@ -45,11 +45,13 @@ function RRHHLayout() {
           <Route path="nomina" element={<Nomina />} />
           <Route path="expedientes" element={<Expedientes />} />
           <Route path="reportes" element={<Reportes />} />
+          <Route path="academico" element={<Academico />} />
           <Route path="*" element={<Navigate to="/rrhh" replace />} />
         </Routes>
       </main>
     </div>
   );
+
 }
 
 export default function App() {

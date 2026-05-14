@@ -15,9 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentosController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
-const multer_1 = require("multer");
-const path_1 = require("path");
-const swagger_1 = require("@nestjs/swagger");
 const documentos_service_1 = require("./documentos.service");
 const crear_documento_dto_1 = require("./dto/crear-documento.dto");
 let DocumentosController = class DocumentosController {
@@ -25,60 +22,32 @@ let DocumentosController = class DocumentosController {
     constructor(documentosService) {
         this.documentosService = documentosService;
     }
-    async subirArchivo(file, body) {
-        return await this.documentosService.guardarDocumento(file, body);
+    guardarDocumento(file, body) {
+        return this.documentosService.guardarDocumento(file, body);
     }
-    async listarPorEmpleado(id) {
-        return await this.documentosService.listarPorEmpleado(id);
+    listarPorEmpleado(id) {
+        return this.documentosService.listarPorEmpleado(id);
     }
 };
 exports.DocumentosController = DocumentosController;
 __decorate([
-    (0, common_1.Post)('subir'),
-    (0, swagger_1.ApiConsumes)('multipart/form-data'),
-    (0, swagger_1.ApiBody)({
-        schema: {
-            type: 'object',
-            properties: {
-                archivo: { type: 'string', format: 'binary' },
-                empleado_id: { type: 'number', example: 1 },
-                usuario_id: { type: 'number', example: 1 },
-                tipo_documento: { type: 'string', example: 'DPI' },
-            },
-            required: ['archivo', 'empleado_id', 'usuario_id', 'tipo_documento'],
-        },
-    }),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('archivo', {
-        storage: (0, multer_1.diskStorage)({
-            destination: './uploads',
-            filename: (req, file, callback) => {
-                const nombreArchivo = `${Date.now()}${(0, path_1.extname)(file.originalname)}`;
-                callback(null, nombreArchivo);
-            },
-        }),
-        fileFilter: (req, file, callback) => {
-            if (file.mimetype !== 'application/pdf') {
-                return callback(new Error('Solo se permiten archivos PDF'), false);
-            }
-            callback(null, true);
-        },
-    })),
+    (0, common_1.Post)('upload'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('archivo')),
     __param(0, (0, common_1.UploadedFile)()),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, crear_documento_dto_1.CrearDocumentoDto]),
-    __metadata("design:returntype", Promise)
-], DocumentosController.prototype, "subirArchivo", null);
+    __metadata("design:returntype", void 0)
+], DocumentosController.prototype, "guardarDocumento", null);
 __decorate([
     (0, common_1.Get)('empleado/:id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], DocumentosController.prototype, "listarPorEmpleado", null);
 exports.DocumentosController = DocumentosController = __decorate([
-    (0, swagger_1.ApiTags)('Documentos'),
-    (0, common_1.Controller)('documentos'),
+    (0, common_1.Controller)('expedientes'),
     __metadata("design:paramtypes", [documentos_service_1.DocumentosService])
 ], DocumentosController);
 //# sourceMappingURL=documentos.controller.js.map
