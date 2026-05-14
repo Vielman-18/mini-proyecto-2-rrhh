@@ -9,88 +9,70 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmpleadosService = exports.EstadoLaboral = void 0;
+exports.EmpleadosService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
-var EstadoLaboral;
-(function (EstadoLaboral) {
-    EstadoLaboral["ACTIVO"] = "activo";
-    EstadoLaboral["SUSPENDIDO"] = "suspendido";
-    EstadoLaboral["RETIRADO"] = "retirado";
-})(EstadoLaboral || (exports.EstadoLaboral = EstadoLaboral = {}));
 let EmpleadosService = class EmpleadosService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async crear(dto) {
+    async crear(data) {
+        const existe = await this.prisma.empleados.findUnique({
+            where: { dpi: data.dpi }
+        });
+        if (existe)
+            throw new common_1.ConflictException('Ya existe un empleado con ese DPI');
         return this.prisma.empleados.create({
             data: {
-                nombres: dto.nombres,
-                apellidos: dto.apellidos,
-                dpi: dto.dpi,
-                fecha_nacimiento: dto.fechaNacimiento
-                    ? new Date(dto.fechaNacimiento)
-                    : null,
-                direccion: dto.direccion,
-                telefono: dto.telefono,
-                email: dto.email,
-                salario: Number(dto.salario),
-                puesto_id: dto.puesto_id,
-                departamento_id: dto.departamento_id,
-                estado: EstadoLaboral.ACTIVO,
-            },
+                nombres: data.nombres,
+                apellidos: data.apellidos,
+                dpi: data.dpi,
+                fecha_nacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : null,
+                direccion: data.direccion,
+                telefono: data.telefono,
+                salario: data.salario,
+                cargo: data.cargo,
+                departamento: data.departamento,
+                estado: 'activo',
+            }
         });
     }
     async listar() {
         return this.prisma.empleados.findMany({
-            orderBy: {
-                id: 'asc',
-            },
+            orderBy: { id: 'asc' }
         });
     }
     async buscarPorId(id) {
         const empleado = await this.prisma.empleados.findUnique({
-            where: { id },
+            where: { id }
         });
-        if (!empleado) {
+        if (!empleado)
             throw new common_1.NotFoundException('Empleado no encontrado');
-        }
         return empleado;
     }
-    async actualizar(id, dto) {
-        await this.buscarPorId(id);
+    async actualizar(id, data) {
         return this.prisma.empleados.update({
             where: { id },
             data: {
-                nombres: dto.nombres,
-                apellidos: dto.apellidos,
-                dpi: dto.dpi,
-                fecha_nacimiento: dto.fechaNacimiento
-                    ? new Date(dto.fechaNacimiento)
-                    : undefined,
-                direccion: dto.direccion,
-                email: dto.email,
-                telefono: dto.telefono,
-                salario: dto.salario !== undefined ? Number(dto.salario) : undefined,
-                puesto_id: dto.puesto_id,
-                departamento_id: dto.departamento_id,
-            },
+                nombres: data.nombres,
+                apellidos: data.apellidos,
+                direccion: data.direccion,
+                telefono: data.telefono,
+                salario: data.salario,
+                cargo: data.cargo,
+                departamento: data.departamento,
+            }
         });
     }
     async eliminar(id) {
-        await this.buscarPorId(id);
-        return this.prisma.empleados.delete({
-            where: { id },
-        });
+        await this.prisma.empleados.delete({ where: { id } });
+        return { message: 'Empleado eliminado correctamente' };
     }
     async cambiarEstado(id, estado) {
-        await this.buscarPorId(id);
         return this.prisma.empleados.update({
             where: { id },
-            data: {
-                estado,
-            },
+            data: { estado }
         });
     }
 };

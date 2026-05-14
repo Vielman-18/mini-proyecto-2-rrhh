@@ -37,4 +37,16 @@ export const nominaService = {
   listar: () => api.get('/nomina/listar'),
 };
 
+export const departamentosService = {
+  listar: () => api.get('/departamentos'),
+  crear: (data: { nombre: string; descripcion?: string }) => api.post('/departamentos', data),
+  eliminar: (id: number) => api.delete(`/departamentos/${id}`),
+};
+
+export const puestosService = {
+  listar: () => api.get('/puestos'),
+  crear: (data: { nombre: string; departamento: string; salarioBase?: number }) => api.post('/puestos', data),
+  eliminar: (id: number) => api.delete(`/puestos/${id}`),
+};
+
 export default api;
