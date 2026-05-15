@@ -8,10 +8,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NominaService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const pdfkit_1 = __importDefault(require("pdfkit"));
 let NominaService = class NominaService {
     prisma;
     constructor(prisma) {
@@ -55,27 +59,23 @@ let NominaService = class NominaService {
                 const q2Start = new Date(year, month, 16);
                 const q2End = new Date(year, month + 1, 0);
                 if (q1End >= inicio && q1Start <= fin) {
-                    const realInicio = q1Start < inicio ? inicio : q1Start;
-                    const realFin = q1End > fin ? fin : q1End;
                     nominas.push(await this.prisma.nomina.create({
                         data: {
                             tipo_periodo: dto.tipo_periodo,
                             periodo: `${year}-${month + 1}-Q1`,
-                            fecha_inicio: realInicio,
-                            fecha_fin: realFin,
+                            fecha_inicio: q1Start < inicio ? inicio : q1Start,
+                            fecha_fin: q1End > fin ? fin : q1End,
                             estado: dto.estado || 'abierta',
                         },
                     }));
                 }
                 if (q2End >= inicio && q2Start <= fin) {
-                    const realInicio = q2Start < inicio ? inicio : q2Start;
-                    const realFin = q2End > fin ? fin : q2End;
                     nominas.push(await this.prisma.nomina.create({
                         data: {
                             tipo_periodo: dto.tipo_periodo,
                             periodo: `${year}-${month + 1}-Q2`,
-                            fecha_inicio: realInicio,
-                            fecha_fin: realFin,
+                            fecha_inicio: q2Start < inicio ? inicio : q2Start,
+                            fecha_fin: q2End > fin ? fin : q2End,
                             estado: dto.estado || 'abierta',
                         },
                     }));
@@ -119,11 +119,9 @@ let NominaService = class NominaService {
         const parametros = await this.prisma.parametros_nomina.findMany({
             where: { activo: true },
         });
-        const igssPorcentaje = Number(parametros.find((p) => p.nombre.toUpperCase() === 'IGSS')?.valor) ||
-            0;
-        const irtraPorcentaje = Number(parametros.find((p) => p.nombre.toUpperCase() === 'IRTRA')?.valor) ||
-            0;
-        const salarioBase = Number(dto.salario_base);
+        const igssPorcentaje = Number(parametros.find(p => p.nombre.toUpperCase() === 'IGSS')?.valor) || 0;
+        const irtraPorcentaje = Number(parametros.find(p => p.nombre.toUpperCase() === 'IRTRA')?.valor) || 0;
+        const salarioBase = Number(dto.salario_base || empleado.salario || 0);
         const horasExtra = Number(dto.horas_extra || 0);
         const bonificaciones = Number(dto.bonificaciones || 0);
         const comisiones = Number(dto.comisiones || 0);
@@ -131,16 +129,16 @@ let NominaService = class NominaService {
         const descuentosLegales = Number(dto.descuentos_legales || 0);
         const pagoHora = salarioBase / 30 / 8;
         const montoHorasExtra = horasExtra * pagoHora * 1.5;
-        const igss = salarioBase * (igssPorcentaje / 100);
-        const irtra = salarioBase * (irtraPorcentaje / 100);
-        const salarioFinal = salarioBase +
+        const ingresoGravable = salarioBase +
             montoHorasExtra +
             bonificaciones +
-            comisiones -
+            comisiones;
+        const igss = ingresoGravable * (igssPorcentaje / 100);
+        const irtra = ingresoGravable * (irtraPorcentaje / 100);
+        const salarioFinal = ingresoGravable -
             deducciones -
             descuentosLegales -
-            igss -
-            irtra;
+            igss;
         return this.prisma.detalle_nomina.create({
             data: {
                 nomina_id: dto.nomina_id,
@@ -162,12 +160,64 @@ let NominaService = class NominaService {
     async listarDetallePorNomina(nominaId) {
         return this.prisma.detalle_nomina.findMany({
             where: { nomina_id: nominaId },
-            include: {
-                empleados: true,
-                ajustes_nomina: true,
-            },
+            include: { empleados: true },
             orderBy: { id: 'desc' },
         });
+    }
+    async generarPdf(nominaId, res) {
+        const nomina = await this.prisma.nomina.findUnique({
+            where: { id: nominaId },
+        });
+        if (!nomina)
+            throw new common_1.NotFoundException('Nómina no encontrada');
+        const detalles = await this.prisma.detalle_nomina.findMany({
+            where: { nomina_id: nominaId },
+            include: { empleados: true },
+        });
+        const doc = new pdfkit_1.default();
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=nomina_${nomina.periodo}.pdf`);
+        doc.pipe(res);
+        doc.fontSize(18).text('REPORTE DE NÓMINA', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(12).text(`Periodo: ${nomina.periodo}`);
+        doc.text(`Estado: ${nomina.estado}`);
+        doc.text(`Inicio: ${nomina.fecha_inicio}`);
+        doc.text(`Fin: ${nomina.fecha_fin}`);
+        doc.moveDown();
+        doc.fontSize(14).text('DETALLE EMPLEADOS');
+        doc.moveDown();
+        let totalPlanilla = 0;
+        detalles.forEach(d => {
+            totalPlanilla += Number(d.salario_final || 0);
+            doc.fontSize(10).text(`${d.empleados.nombres} ${d.empleados.apellidos}`);
+            doc.text(`Salario base: Q${d.salario_base}`);
+            doc.text(`Horas extra: ${d.horas_extra}`);
+            doc.text(`Bonos: Q${d.bonificaciones}`);
+            doc.text(`Comisiones: Q${d.comisiones}`);
+            doc.text(`IGSS: Q${d.igss}`);
+            doc.text(`IRTRA (empresa): Q${d.irtra}`);
+            doc.text(`Total: Q${d.salario_final}`);
+            doc.moveDown();
+        });
+        doc.moveDown();
+        doc.fontSize(12).text(`TOTAL PLANILLA: Q${totalPlanilla}`);
+        const ultimo = await this.prisma.logspdf.findFirst({
+            orderBy: {
+                id: 'desc',
+            },
+        });
+        const nuevoId = ultimo ? ultimo.id + 1 : 1;
+        await this.prisma.logspdf.create({
+            data: {
+                id: nuevoId,
+                nombre_archivo: `nomina_${nomina.periodo}.pdf`,
+                ruta: null,
+                nomina_id: nominaId,
+                fecha_generacion: new Date(),
+            },
+        });
+        doc.end();
     }
 };
 exports.NominaService = NominaService;

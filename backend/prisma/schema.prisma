@@ -110,6 +110,7 @@ model nomina {
   estado         String           @default("abierta") @db.VarChar(20)
   fecha_creacion DateTime?        @default(now()) @db.Timestamp(6)
   detalle_nomina detalle_nomina[]
+  logspdf        logspdf[]
 }
 
 model parametros_nomina {
@@ -159,4 +160,13 @@ model usuarios {
   documentos     documentos[]
   empleados      empleados?
   puestos        puestos[]
+}
+
+model logspdf {
+  id               Int       @id
+  nombre_archivo   String    @db.VarChar(255)
+  ruta             String?   @db.VarChar(255)
+  nomina_id        Int
+  fecha_generacion DateTime? @default(now()) @db.Timestamp(6)
+  nomina           nomina    @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_logspdf_nomina")
 }

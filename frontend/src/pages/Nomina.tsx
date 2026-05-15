@@ -70,15 +70,7 @@ export default function Nomina() {
     (e) => String(e.id) === empleadoId,
   );
 
-  const salarioBase = Number(empleadoSeleccionado?.salario || 0);
-  const pagoHora = salarioBase / 30 / 8;
-  const montoHorasExtra = horasExtra * pagoHora * 1.5;
-
-  const subtotalIngresos =
-    salarioBase + montoHorasExtra + bonificaciones + comisiones;
-
-  const subtotalDeducciones = deducciones + descuentosLegales;
-  const totalEstimado = subtotalIngresos - subtotalDeducciones;
+   const salarioBase = Number(empleadoSeleccionado?.salario || 0);
 
   const resumen = useMemo(() => {
     const totalPlanilla = detalles.reduce(
@@ -170,7 +162,7 @@ export default function Nomina() {
 
       await cargarDatos();
 
-      const nuevaId = String(res.data.id);
+      const nuevaId = String(res.data[0].id);
       setNominaId(nuevaId);
       cargarDetalles(nuevaId);
     } catch {
@@ -426,12 +418,7 @@ export default function Nomina() {
             </div>
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <Resumen label="Salario base" value={quetzal(salarioBase)} />
-              <Resumen label="Pago hora" value={quetzal(pagoHora)} />
-              <Resumen label="Monto extra" value={quetzal(montoHorasExtra)} />
-              <Resumen label="Ingresos" value={quetzal(subtotalIngresos)} />
-              <Resumen label="Deducciones manuales" value={quetzal(subtotalDeducciones)} />
-              <Resumen label="Total estimado" value={quetzal(totalEstimado)} strong />
+             <Resumen label="Salario Base" value ={quetzal(salarioBase)}/>
             </div>
 
             <button

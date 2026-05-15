@@ -26,6 +26,9 @@ let NominaController = class NominaController {
     crear(dto) {
         return this.nominaService.crearNomina(dto);
     }
+    async generarPdf(id, res) {
+        return this.nominaService.generarPdf(Number(id), res);
+    }
     listar() {
         return this.nominaService.listarNominas();
     }
@@ -44,6 +47,14 @@ __decorate([
     __metadata("design:paramtypes", [crear_nomina_dto_1.CrearNominaDto]),
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "crear", null);
+__decorate([
+    (0, common_1.Get)(':id/pdf'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, Res()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Response]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "generarPdf", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
