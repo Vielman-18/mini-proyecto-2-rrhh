@@ -14,45 +14,29 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NominaController = void 0;
 const common_1 = require("@nestjs/common");
-const crear_detalle_nomina_dto_1 = require("./dto/crear-detalle-nomina.dto");
+const swagger_1 = require("@nestjs/swagger");
 const nomina_service_1 = require("./nomina.service");
 const crear_nomina_dto_1 = require("./dto/crear-nomina.dto");
+const crear_detalle_nomina_dto_1 = require("./dto/crear-detalle-nomina.dto");
 let NominaController = class NominaController {
     nominaService;
     constructor(nominaService) {
         this.nominaService = nominaService;
     }
-    CrearDetalleNomina(dto) {
-        return this.nominaService.crearDetalleNomina(dto);
-    }
-    listarDetallePorNomina(id) {
-        return this.nominaService.listarDetallePorNomina(Number(id));
-    }
     crear(dto) {
         return this.nominaService.crearNomina(dto);
-    }
-    async generarPdf(id, res) {
-        await this.nominaService.generarPdf(Number(id), res);
     }
     listar() {
         return this.nominaService.listarNominas();
     }
+    crearDetalleNomina(dto) {
+        return this.nominaService.crearDetalleNomina(dto);
+    }
+    listarDetallePorNomina(id) {
+        return this.nominaService.listarDetallePorNomina(id);
+    }
 };
 exports.NominaController = NominaController;
-__decorate([
-    (0, common_1.Post)('detalle'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [crear_detalle_nomina_dto_1.CrearDetalleNominaDto]),
-    __metadata("design:returntype", void 0)
-], NominaController.prototype, "CrearDetalleNomina", null);
-__decorate([
-    (0, common_1.Get)(':id/detalle'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], NominaController.prototype, "listarDetallePorNomina", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -61,20 +45,27 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "crear", null);
 __decorate([
-    (0, common_1.Get)(':id/pdf'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Res)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", Promise)
-], NominaController.prototype, "generarPdf", null);
-__decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "listar", null);
+__decorate([
+    (0, common_1.Post)('detalle'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [crear_detalle_nomina_dto_1.CrearDetalleNominaDto]),
+    __metadata("design:returntype", void 0)
+], NominaController.prototype, "crearDetalleNomina", null);
+__decorate([
+    (0, common_1.Get)(':id/detalle'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], NominaController.prototype, "listarDetallePorNomina", null);
 exports.NominaController = NominaController = __decorate([
+    (0, swagger_1.ApiTags)('Nómina'),
     (0, common_1.Controller)('nomina'),
     __metadata("design:paramtypes", [nomina_service_1.NominaService])
 ], NominaController);

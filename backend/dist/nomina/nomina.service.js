@@ -22,85 +22,27 @@ let NominaService = class NominaService {
         this.prisma = prisma;
     }
     async crearNomina(dto) {
-        const inicio = new Date(dto.fecha_inicio);
-        const fin = new Date(dto.fecha_fin);
-        const nominas = [];
-        if (dto.tipo_periodo === 'mensual') {
-            let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
-            while (cursor <= fin) {
-                const year = cursor.getFullYear();
-                const month = cursor.getMonth();
-                const mesInicio = new Date(year, month, 1);
-                const mesFin = new Date(year, month + 1, 0);
-                const realInicio = mesInicio < inicio ? inicio : mesInicio;
-                const realFin = mesFin > fin ? fin : mesFin;
-                if (realInicio <= realFin) {
-                    nominas.push(await this.prisma.nomina.create({
-                        data: {
-                            tipo_periodo: dto.tipo_periodo,
-                            periodo: `${year}-${month + 1}`,
-                            fecha_inicio: realInicio,
-                            fecha_fin: realFin,
-                            estado: dto.estado || 'abierta',
-                        },
-                    }));
-                }
-                cursor = new Date(year, month + 1, 1);
-            }
-            return nominas;
-        }
-        if (dto.tipo_periodo === 'quincenal') {
-            let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
-            while (cursor <= fin) {
-                const year = cursor.getFullYear();
-                const month = cursor.getMonth();
-                const q1Start = new Date(year, month, 1);
-                const q1End = new Date(year, month, 15);
-                const q2Start = new Date(year, month, 16);
-                const q2End = new Date(year, month + 1, 0);
-                if (q1End >= inicio && q1Start <= fin) {
-                    nominas.push(await this.prisma.nomina.create({
-                        data: {
-                            tipo_periodo: dto.tipo_periodo,
-                            periodo: `${year}-${month + 1}-Q1`,
-                            fecha_inicio: q1Start < inicio ? inicio : q1Start,
-                            fecha_fin: q1End > fin ? fin : q1End,
-                            estado: dto.estado || 'abierta',
-                        },
-                    }));
-                }
-                if (q2End >= inicio && q2Start <= fin) {
-                    nominas.push(await this.prisma.nomina.create({
-                        data: {
-                            tipo_periodo: dto.tipo_periodo,
-                            periodo: `${year}-${month + 1}-Q2`,
-                            fecha_inicio: q2Start < inicio ? inicio : q2Start,
-                            fecha_fin: q2End > fin ? fin : q2End,
-                            estado: dto.estado || 'abierta',
-                        },
-                    }));
-                }
-                cursor = new Date(year, month + 1, 1);
-            }
-            return nominas;
-        }
-        const nomina = await this.prisma.nomina.create({
+        return await this.prisma.nomina.create({
             data: {
                 tipo_periodo: dto.tipo_periodo,
                 periodo: dto.periodo,
-                fecha_inicio: inicio,
-                fecha_fin: fin,
+                fecha_inicio: new Date(dto.fecha_inicio),
+                fecha_fin: new Date(dto.fecha_fin),
                 estado: dto.estado || 'abierta',
             },
         });
         return [nomina];
     }
     async listarNominas() {
-        return this.prisma.nomina.findMany({
-            orderBy: { fecha_creacion: 'desc' },
+        return await this.prisma.nomina.findMany({
+            orderBy: {
+                fecha_creacion: 'desc',
+            },
             include: {
                 detalle_nomina: {
-                    include: { empleados: true },
+                    include: {
+                        empleados: true,
+                    },
                 },
             },
         });
@@ -109,19 +51,22 @@ let NominaService = class NominaService {
         const empleado = await this.prisma.empleados.findUnique({
             where: { id: dto.empleado_id },
         });
-        if (!empleado)
+        if (!empleado) {
             throw new common_1.NotFoundException('Empleado no encontrado');
+        }
         const nominaExiste = await this.prisma.nomina.findUnique({
             where: { id: dto.nomina_id },
         });
-        if (!nominaExiste)
+        if (!nominaExiste) {
             throw new common_1.NotFoundException('Nómina no encontrada');
+        }
         const parametros = await this.prisma.parametros_nomina.findMany({
             where: { activo: true },
         });
-        const igssPorcentaje = Number(parametros.find(p => p.nombre.toUpperCase() === 'IGSS')?.valor) || 0;
-        const irtraPorcentaje = Number(parametros.find(p => p.nombre.toUpperCase() === 'IRTRA')?.valor) || 0;
-        const salarioBase = Number(dto.salario_base || empleado.salario || 0);
+        const igssPorcentaje = Number(parametros.find((p) => p.nombre.toUpperCase() === 'IGSS')?.valor || 0);
+        const irtraPorcentaje = Number(parametros.find((p) => p.nombre.toUpperCase() === 'IRTRA')?.valor || 0);
+        const salarioBase = Number(dto.salario_base);
+        const horasTrabajadas = Number(dto.horas_trabajadas || 0);
         const horasExtra = Number(dto.horas_extra || 0);
         const bonificaciones = Number(dto.bonificaciones || 0);
         const comisiones = Number(dto.comisiones || 0);
@@ -129,22 +74,22 @@ let NominaService = class NominaService {
         const descuentosLegales = Number(dto.descuentos_legales || 0);
         const pagoHora = salarioBase / 30 / 8;
         const montoHorasExtra = horasExtra * pagoHora * 1.5;
-        const ingresoGravable = salarioBase +
+        const igss = salarioBase * (igssPorcentaje / 100);
+        const irtra = salarioBase * (irtraPorcentaje / 100);
+        const salarioFinal = salarioBase +
             montoHorasExtra +
             bonificaciones +
-            comisiones;
-        const igss = ingresoGravable * (igssPorcentaje / 100);
-        const irtra = ingresoGravable * (irtraPorcentaje / 100);
-        const salarioFinal = ingresoGravable -
+            comisiones -
             deducciones -
             descuentosLegales -
-            igss;
-        return this.prisma.detalle_nomina.create({
+            igss -
+            irtra;
+        return await this.prisma.detalle_nomina.create({
             data: {
                 nomina_id: dto.nomina_id,
                 empleado_id: dto.empleado_id,
                 salario_base: salarioBase,
-                horas_trabajadas: dto.horas_trabajadas || 0,
+                horas_trabajadas: horasTrabajadas,
                 horas_extra: horasExtra,
                 monto_horas_extra: montoHorasExtra,
                 bonificaciones,
@@ -158,58 +103,18 @@ let NominaService = class NominaService {
         });
     }
     async listarDetallePorNomina(nominaId) {
-        return this.prisma.detalle_nomina.findMany({
-            where: { nomina_id: nominaId },
-            include: { empleados: true },
-            orderBy: { id: 'desc' },
-        });
-    }
-    async generarPdf(nominaId, res) {
-        const nomina = await this.prisma.nomina.findUnique({
-            where: { id: nominaId },
-        });
-        if (!nomina)
-            throw new common_1.NotFoundException('Nómina no encontrada');
-        const detalles = await this.prisma.detalle_nomina.findMany({
-            where: { nomina_id: nominaId },
-            include: { empleados: true },
-        });
-        const doc = new pdfkit_1.default();
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=nomina_${nomina.periodo}.pdf`);
-        doc.pipe(res);
-        doc.fontSize(18).text('REPORTE DE NÓMINA', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).text(`Periodo: ${nomina.periodo}`);
-        doc.text(`Estado: ${nomina.estado}`);
-        doc.text(`Inicio: ${nomina.fecha_inicio}`);
-        doc.text(`Fin: ${nomina.fecha_fin}`);
-        doc.moveDown();
-        doc.fontSize(14).text('DETALLE EMPLEADOS');
-        doc.moveDown();
-        let totalPlanilla = 0;
-        detalles.forEach(d => {
-            totalPlanilla += Number(d.salario_final || 0);
-            doc.fontSize(10).text(`${d.empleados.nombres} ${d.empleados.apellidos}`);
-            doc.text(`Salario base: Q${d.salario_base}`);
-            doc.text(`Horas extra: ${d.horas_extra}`);
-            doc.text(`Bonos: Q${d.bonificaciones}`);
-            doc.text(`Comisiones: Q${d.comisiones}`);
-            doc.text(`IGSS: Q${d.igss}`);
-            doc.text(`IRTRA (empresa): Q${d.irtra}`);
-            doc.text(`Total: Q${d.salario_final}`);
-            doc.moveDown();
-        });
-        doc.moveDown();
-        doc.fontSize(12).text(`TOTAL PLANILLA: Q${totalPlanilla}`);
-        await this.prisma.logspdf.create({
-            data: {
-                nombre_archivo: `nomina_${nomina.periodo}.pdf`,
+        return await this.prisma.detalle_nomina.findMany({
+            where: {
                 nomina_id: nominaId,
-                fecha_generacion: new Date(),
+            },
+            include: {
+                empleados: true,
+                ajustes_nomina: true,
+            },
+            orderBy: {
+                id: 'desc',
             },
         });
-        doc.end();
     }
 };
 exports.NominaService = NominaService;
