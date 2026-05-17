@@ -77,6 +77,19 @@ model ajustes_nomina {
   usuarios          usuarios       @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_ajuste_usuario")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model departamentos {
+  id             Int         @id @default(autoincrement())
+  nombre         String      @unique @db.VarChar(100)
+  descripcion    String?
+  estado         String      @default("activo") @db.VarChar(20)
+  creado_por     Int
+  fecha_creacion DateTime?   @default(now()) @db.Timestamp(6)
+  usuarios       usuarios    @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_departamento_usuario")
+  empleados      empleados[]
+  puestos        puestos[]
+}
+
 model detalle_nomina {
   id                 Int              @id @default(autoincrement())
   nomina_id          Int
@@ -97,6 +110,43 @@ model detalle_nomina {
   nomina             nomina           @relation(fields: [nomina_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_detalle_nomina_nomina")
 }
 
+model documentos {
+  id             Int       @id @default(autoincrement())
+  empleado_id    Int
+  usuario_id     Int
+  nombre_archivo String    @db.VarChar(255)
+  ruta_archivo   String
+  tipo_documento String    @db.VarChar(100)
+  fecha_carga    DateTime? @default(now()) @db.Timestamp(6)
+  empleados      empleados @relation(fields: [empleado_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_documento_empleado")
+  usuarios       usuarios  @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_documento_usuario")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model empleados {
+  id                 Int                  @id @default(autoincrement())
+  usuario_id         Int?                 @unique
+  departamento_id    Int?
+  puesto_id          Int?
+  email              String               @unique @db.VarChar(150)
+  nombres            String               @db.VarChar(100)
+  apellidos          String               @db.VarChar(100)
+  dpi                String               @unique @db.VarChar(20)
+  fecha_nacimiento   DateTime?            @db.Date
+  direccion          String?
+  telefono           String?              @db.VarChar(20)
+  salario            Decimal              @db.Decimal(10, 2)
+  estado             String               @default("activo") @db.VarChar(20)
+  fecha_creacion     DateTime?            @default(now()) @db.Timestamp(6)
+  detalle_nomina     detalle_nomina[]
+  documentos         documentos[]
+  departamentos      departamentos?       @relation(fields: [departamento_id], references: [id], onUpdate: NoAction, map: "fk_empleado_departamento")
+  puestos            puestos?             @relation(fields: [puesto_id], references: [id], onUpdate: NoAction, map: "fk_empleado_puesto")
+  usuarios           usuarios?            @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_empleado_usuario")
+  estado_expediente  estado_expediente?
+  registro_academico registro_academico[]
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model estado_expediente {
   id             Int       @id @default(autoincrement())
@@ -107,6 +157,19 @@ model estado_expediente {
   empleados      empleados @relation(fields: [empleado_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_estado_expediente_empleado")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model nomina {
+  id             Int              @id @default(autoincrement())
+  tipo_periodo   String           @db.VarChar(20)
+  periodo        String           @db.VarChar(20)
+  fecha_inicio   DateTime         @db.Date
+  fecha_fin      DateTime         @db.Date
+  estado         String           @default("abierta") @db.VarChar(20)
+  fecha_creacion DateTime?        @default(now()) @db.Timestamp(6)
+  detalle_nomina detalle_nomina[]
+  logspdf        logspdf[]
+}
+
 model parametros_nomina {
   id             Int       @id @default(autoincrement())
   nombre         String    @unique @db.VarChar(100)
@@ -114,6 +177,31 @@ model parametros_nomina {
   descripcion    String?
   activo         Boolean?  @default(true)
   fecha_creacion DateTime? @default(now()) @db.Timestamp(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model puestos {
+  id              Int           @id @default(autoincrement())
+  departamento_id Int
+  nombre          String        @db.VarChar(100)
+  descripcion     String?
+  salario_base    Decimal?      @db.Decimal(10, 2)
+  estado          String        @default("activo") @db.VarChar(20)
+  creado_por      Int
+  fecha_creacion  DateTime?     @default(now()) @db.Timestamp(6)
+  empleados       empleados[]
+  departamentos   departamentos @relation(fields: [departamento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_puesto_departamento")
+  usuarios        usuarios      @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_puesto_usuario")
+}
+
+model registro_academico {
+  id               Int       @id @default(autoincrement())
+  empleado_id      Int
+  titulo           String    @db.VarChar(150)
+  institucion      String    @db.VarChar(150)
+  fecha_graduacion DateTime? @db.Date
+  fecha_creacion   DateTime? @default(now()) @db.Timestamp(6)
+  empleados        empleados @relation(fields: [empleado_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_academico_empleado")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -131,30 +219,11 @@ model usuarios {
   puestos        puestos[]
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model departamentos {
-  id             Int         @id @default(autoincrement())
-  nombre         String      @unique @db.VarChar(100)
-  descripcion    String?
-  estado         String      @default("activo") @db.VarChar(20)
-  creado_por     Int
-  fecha_creacion DateTime?   @default(now()) @db.Timestamp(6)
-  usuarios       usuarios    @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_departamento_usuario")
-  empleados      empleados[]
-  puestos        puestos[]
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model puestos {
-  id              Int           @id @default(autoincrement())
-  departamento_id Int
-  nombre          String        @db.VarChar(100)
-  descripcion     String?
-  salario_base    Decimal?      @db.Decimal(10, 2)
-  estado          String        @default("activo") @db.VarChar(20)
-  creado_por      Int
-  fecha_creacion  DateTime?     @default(now()) @db.Timestamp(6)
-  empleados       empleados[]
-  departamentos   departamentos @relation(fields: [departamento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_puesto_departamento")
-  usuarios        usuarios      @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_puesto_usuario")
+model logspdf {
+  id               Int       @id @default(autoincrement())
+  nombre_archivo   String    @db.VarChar(255)
+  ruta             String?   @db.VarChar(255)
+  nomina_id        Int
+  fecha_generacion DateTime? @default(now()) @db.Timestamp(6)
+  nomina           nomina    @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_logspdf_nomina")
 }
