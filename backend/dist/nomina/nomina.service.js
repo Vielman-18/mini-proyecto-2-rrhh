@@ -202,17 +202,9 @@ let NominaService = class NominaService {
         });
         doc.moveDown();
         doc.fontSize(12).text(`TOTAL PLANILLA: Q${totalPlanilla}`);
-        const ultimo = await this.prisma.logspdf.findFirst({
-            orderBy: {
-                id: 'desc',
-            },
-        });
-        const nuevoId = ultimo ? ultimo.id + 1 : 1;
         await this.prisma.logspdf.create({
             data: {
-                id: nuevoId,
                 nombre_archivo: `nomina_${nomina.periodo}.pdf`,
-                ruta: null,
                 nomina_id: nominaId,
                 fecha_generacion: new Date(),
             },

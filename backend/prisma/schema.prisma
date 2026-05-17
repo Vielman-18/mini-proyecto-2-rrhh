@@ -163,7 +163,7 @@ model usuarios {
 }
 
 model logspdf {
-  id               Int       @id
+  id               Int       @id @default(autoincrement())
   nombre_archivo   String    @db.VarChar(255)
   ruta             String?   @db.VarChar(255)
   nomina_id        Int

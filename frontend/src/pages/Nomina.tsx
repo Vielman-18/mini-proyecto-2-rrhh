@@ -162,7 +162,7 @@ export default function Nomina() {
 
       await cargarDatos();
 
-      const nuevaId = String(res.data[0].id);
+      const nuevaId = String(res.data.id);
       setNominaId(nuevaId);
       cargarDetalles(nuevaId);
     } catch {
@@ -207,7 +207,7 @@ export default function Nomina() {
       setComisiones(0);
       setDeducciones(0);
       setDescuentosLegales(0);
-
+      
       cargarDetalles(nominaId);
     } catch {
       toast.error('Error al agregar detalle');
@@ -215,6 +215,39 @@ export default function Nomina() {
       setLoading(false);
     }
   };
+   const generarPdf = async () => {
+  if (!nominaId) {
+    toast.error('Selecciona una nómina');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await api.get(`/nomina/${nominaId}/pdf`, {
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.setAttribute('download', `nomina_${nominaSeleccionada?.periodo}.pdf`);
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    toast.success('PDF generado');
+  } catch {
+    toast.error('Error al generar PDF');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const cambiarNomina = (id: string) => {
     setNominaId(id);
@@ -446,7 +479,6 @@ export default function Nomina() {
               Empleados incluidos en el período seleccionado.
             </p>
           </div>
-
           <button
             type="button"
             onClick={() => nominaId && cargarDetalles(nominaId)}
@@ -454,6 +486,14 @@ export default function Nomina() {
           >
             Actualizar detalle
           </button>
+          <button
+      type="button"
+      onClick={generarPdf}
+      disabled={loading || !nominaId}
+      className="rounded-2xl border border-emerald-400/20 bg-emerald-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {loading ? 'Generando...' : 'Exportar PDF'}
+    </button>
         </div>
 
         {detalles.length === 0 ? (
