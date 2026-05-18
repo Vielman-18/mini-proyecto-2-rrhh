@@ -11,13 +11,14 @@ const common_1 = require("@nestjs/common");
 const nomina_controller_1 = require("./nomina.controller");
 const nomina_service_1 = require("./nomina.service");
 const prisma_service_1 = require("../prisma/prisma.service");
+const nomina_pdf_service_1 = require("../reportes/nomina-pdf/nomina-pdf.service");
 let NominaModule = class NominaModule {
 };
 exports.NominaModule = NominaModule;
 exports.NominaModule = NominaModule = __decorate([
     (0, common_1.Module)({
         controllers: [nomina_controller_1.NominaController],
-        providers: [nomina_service_1.NominaService, prisma_service_1.PrismaService],
+        providers: [nomina_service_1.NominaService, prisma_service_1.PrismaService, nomina_pdf_service_1.NominaPdfService],
     })
 ], NominaModule);
 //# sourceMappingURL=nomina.module.js.map

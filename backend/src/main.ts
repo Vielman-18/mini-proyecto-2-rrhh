@@ -24,7 +24,7 @@ async function bootstrap() {
     .setTitle('Sistema RRHH y Nómina')
     .setDescription('API del sistema de gestión de RRHH')
     .setVersion('1.0')
-    .addBearerAuth() // 👈 esto activa el botón Authorize
+    .addBearerAuth() 
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
