@@ -1,4 +1,3 @@
-// src/nomina/dto/crear-detalle-nomina.dto.ts
 
 import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';

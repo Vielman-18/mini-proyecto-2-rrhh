@@ -54,6 +54,197 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
     </div>
   );
 }
+
+export function ModalDetalleEmpleado({
+  isOpen,
+  onClose,
+  detalle,
+}: any) {
+  if (!isOpen || !detalle) return null;
+
+  return (
+    <div className="
+      fixed inset-0 z-[200]
+      flex items-center justify-center
+      bg-black/70 backdrop-blur-sm
+      p-4
+    ">
+
+      <div className="
+        w-full max-w-2xl
+        bg-[#0b1017]
+        border border-white/10
+        rounded-3xl
+        overflow-hidden
+      ">
+
+        {/* HEADER */}
+        <div className="
+          flex items-center justify-between
+          px-6 py-5
+          border-b border-white/10
+        ">
+
+          <div>
+            <h2 className="text-2xl font-black text-white">
+              Detalle de Pago
+            </h2>
+
+            <p className="text-slate-400 text-sm mt-1">
+              Información completa del empleado
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="
+              w-10 h-10
+              rounded-xl
+              bg-white/5
+              hover:bg-white/10
+              transition
+              text-slate-300
+              font-bold
+            "
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* BODY */}
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Empleado
+            </p>
+
+            <h3 className="font-bold mt-1">
+              {detalle.empleados?.nombres}{' '}
+              {detalle.empleados?.apellidos}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              ID Empleado
+            </p>
+
+            <h3 className="font-bold mt-1">
+              #{detalle.empleados?.id}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Salario Base
+            </p>
+
+            <h3 className="font-bold mt-1 text-cyan-400">
+              {quetzal(detalle.salario_base)}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Horas No Trabajadas
+            </p>
+
+            <h3 className="font-bold mt-1">
+              {detalle.horas_trabajadas}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Horas Extra
+            </p>
+
+            <h3 className="font-bold mt-1">
+              {detalle.horas_extra}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Bonificaciones
+            </p>
+
+            <h3 className="font-bold mt-1 text-emerald-400">
+              {quetzal(detalle.bonificaciones)}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Comisiones
+            </p>
+
+            <h3 className="font-bold mt-1 text-emerald-400">
+              {quetzal(detalle.comisiones)}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Deducciones
+            </p>
+
+            <h3 className="font-bold mt-1 text-red-400">
+              {quetzal(detalle.deducciones)}
+            </h3>
+          </div>
+
+          <div className="bg-[#05070a] rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">
+              Descuentos Legales
+            </p>
+
+            <h3 className="font-bold mt-1 text-red-400">
+              {quetzal(detalle.descuentos_legales)}
+            </h3>
+          </div>
+
+          <div className="
+            bg-cyan-400/10
+            border border-cyan-400/20
+            rounded-2xl
+            p-4
+          ">
+            <p className="text-cyan-300 text-sm">
+              Salario Final
+            </p>
+
+            <h3 className="text-3xl font-black text-cyan-400 mt-1">
+              {quetzal(detalle.salario_final)}
+            </h3>
+          </div>
+
+        </div>
+
+        {/* FOOTER */}
+        <div className="px-6 pb-6">
+          <button
+            onClick={onClose}
+            className="
+              w-full
+              py-3
+              rounded-2xl
+              bg-white
+              hover:bg-slate-200
+              transition
+              text-black
+              font-black
+            "
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DrawerEmpleado({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 
@@ -183,6 +374,8 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
               />
             </div>
 
+            
+
             <div>
               <label className="block text-sm text-slate-400 mb-2">
                 Bonificaciones
@@ -214,23 +407,6 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
                 }
               />
             </div>
-
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Deducciones
-              </label>
-
-              <input
-                type="number"
-                className={inputS}
-                placeholder="0"
-                value={h.deducciones}
-                onChange={(e) =>
-                  h.setDeducciones(Number(e.target.value))
-                }
-              />
-            </div>
-
           </div>
 
           {/* DESCUENTOS */}

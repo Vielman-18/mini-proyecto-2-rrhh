@@ -17,7 +17,7 @@ model ajustes_nomina {
   motivo            String?
   fecha_cambio      DateTime?      @default(now()) @db.Timestamp(6)
   detalle_nomina    detalle_nomina @relation(fields: [detalle_nomina_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ajuste_detalle_nomina")
-  usuarios          usuarios       @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_ajuste_usuario")
+  usuarios          usuarios       @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ajuste_usuario")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -25,10 +25,10 @@ model departamentos {
   id             Int         @id @default(autoincrement())
   nombre         String      @unique @db.VarChar(100)
   descripcion    String?
-  estado         String      @default("activo") @db.VarChar(20)
+  estado         String?     @default("activo") @db.VarChar(20)
   creado_por     Int
   fecha_creacion DateTime?   @default(now()) @db.Timestamp(6)
-  usuarios       usuarios    @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_departamento_usuario")
+  usuarios       usuarios    @relation(fields: [creado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_departamento_usuario")
   empleados      empleados[]
   puestos        puestos[]
 }
@@ -62,7 +62,7 @@ model documentos {
   tipo_documento String    @db.VarChar(100)
   fecha_carga    DateTime? @default(now()) @db.Timestamp(6)
   empleados      empleados @relation(fields: [empleado_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_documento_empleado")
-  usuarios       usuarios  @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_documento_usuario")
+  usuarios       usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_documento_usuario")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -79,13 +79,13 @@ model empleados {
   direccion          String?
   telefono           String?              @db.VarChar(20)
   salario            Decimal              @db.Decimal(10, 2)
-  estado             String               @default("activo") @db.VarChar(20)
+  estado             String?              @default("activo") @db.VarChar(20)
   fecha_creacion     DateTime?            @default(now()) @db.Timestamp(6)
   detalle_nomina     detalle_nomina[]
   documentos         documentos[]
-  departamentos      departamentos?       @relation(fields: [departamento_id], references: [id], onUpdate: NoAction, map: "fk_empleado_departamento")
-  puestos            puestos?             @relation(fields: [puesto_id], references: [id], onUpdate: NoAction, map: "fk_empleado_puesto")
-  usuarios           usuarios?            @relation(fields: [usuario_id], references: [id], onUpdate: NoAction, map: "fk_empleado_usuario")
+  departamentos      departamentos?       @relation(fields: [departamento_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_departamento")
+  puestos            puestos?             @relation(fields: [puesto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_puesto")
+  usuarios           usuarios?            @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_usuario")
   estado_expediente  estado_expediente?
   registro_academico registro_academico[]
 }
@@ -116,7 +116,7 @@ model nomina {
   periodo        String           @db.VarChar(20)
   fecha_inicio   DateTime         @db.Date
   fecha_fin      DateTime         @db.Date
-  estado         String           @default("abierta") @db.VarChar(20)
+  estado         String?          @default("abierta") @db.VarChar(20)
   fecha_creacion DateTime?        @default(now()) @db.Timestamp(6)
   detalle_nomina detalle_nomina[]
   logspdf        logspdf[]
@@ -137,13 +137,12 @@ model puestos {
   departamento_id Int
   nombre          String        @db.VarChar(100)
   descripcion     String?
-  salario_base    Decimal?      @db.Decimal(10, 2)
-  estado          String        @default("activo") @db.VarChar(20)
+  estado          String?       @default("activo") @db.VarChar(20)
   creado_por      Int
   fecha_creacion  DateTime?     @default(now()) @db.Timestamp(6)
   empleados       empleados[]
   departamentos   departamentos @relation(fields: [departamento_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_puesto_departamento")
-  usuarios        usuarios      @relation(fields: [creado_por], references: [id], onUpdate: NoAction, map: "fk_puesto_usuario")
+  usuarios        usuarios      @relation(fields: [creado_por], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_puesto_usuario")
 }
 
 model registro_academico {

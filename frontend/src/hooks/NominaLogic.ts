@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api/axios';
 import toast from 'react-hot-toast';
-import type { Empleado, Nomina, DetalleNomina } from '../types/nomina';
+import type { Empleado, Nomina, DetalleNomina,} from '../types/nomina';
 
 export function useNomina() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
@@ -10,7 +10,6 @@ export function useNomina() {
   const [nominaId, setNominaId] = useState<string>('');
 
   const [empleadoId, setEmpleadoId] = useState('');
-
   const [tipoPeriodo, setTipoPeriodo] = useState('mensual');
   const [periodo, setPeriodo] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
@@ -24,13 +23,85 @@ export function useNomina() {
   const [descuentosLegales, setDescuentosLegales] = useState(0);
 
   const [loading, setLoading] = useState(false);
+  const [estadoActual, setEstadoActual] = useState<string>('');
 
   const cargarDetalles = async (id: string) => {
     try {
+      console.log('Intentando cargar detalles para nómina:', id);
       const res = await api.get(`/nomina/${id}/detalle`);
-      setDetalles(res.data);
-    } catch {
+      console.log('Detalles cargados exitosamente:', res.data);
+      setDetalles(res.data || []);
+    } catch (error) {
+      console.error('Error al cargar detalles:', error);
+      toast.error('Error al cargar detalles de la nómina');
       setDetalles([]);
+    }
+  };
+
+  const generarPdf = async () => {
+  if (!nominaId) {
+    toast.error('Selecciona una nómina');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await api.get(`/nomina/${nominaId}/pdf`, {
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+
+    const nomina = nominas.find(
+      (n) => String(n.id) === String(nominaId)
+    );
+
+    link.href = url;
+    link.setAttribute(
+      'download',
+      `nomina_${nomina?.periodo || nominaId}.pdf`
+    );
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    toast.success('PDF generado');
+  } catch {
+    toast.error('Error al generar PDF');
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const cambiarEstado = async (nuevoEstado: string) => {
+    if (!nominaId) {
+      toast.error('Selecciona una nómina');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.put(`/nomina/${nominaId}/estado`, { estado: nuevoEstado });
+      setEstadoActual(nuevoEstado);
+      
+      // Actualizar el estado en el array de nóminas
+      setNominas(nominas.map(n => 
+        String(n.id) === String(nominaId) 
+          ? { ...n, estado: nuevoEstado }
+          : n
+      ));
+      
+      toast.success(`Nómina marcada como ${nuevoEstado}`);
+    } catch (error) {
+      console.error('Error al cambiar estado:', error);
+      toast.error('Error al cambiar estado');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,9 +112,11 @@ export function useNomina() {
         api.get('/nomina'),
       ]);
 
+      console.log('Nóminas cargadas:', nom.data);
       setEmpleados(emp.data.filter((e: Empleado) => e.estado === 'activo'));
       setNominas(nom.data);
-    } catch {
+    } catch (error) {
+      console.error('Error al cargar datos:', error);
       toast.error('Error al cargar datos');
     }
   };
@@ -174,7 +247,13 @@ export function useNomina() {
     crearNomina,
     agregarDetalle,
     cargarDetalles,
+    cambiarEstado,
+
+    estadoActual,
+    setEstadoActual,
 
     resumen,
+
+    generarPdf,
   };
 }

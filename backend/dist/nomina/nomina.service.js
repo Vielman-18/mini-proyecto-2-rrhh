@@ -94,6 +94,19 @@ let NominaService = class NominaService {
         });
         return [nomina];
     }
+    async eliminarNomina(id) {
+        await this.prisma.nomina.delete({ where: { id } });
+    }
+    async cambiarEstado(id, estado) {
+        const nomina = await this.prisma.nomina.findUnique({ where: { id } });
+        if (!nomina) {
+            throw new common_1.NotFoundException('Nómina no encontrada');
+        }
+        return this.prisma.nomina.update({
+            where: { id },
+            data: { estado },
+        });
+    }
     async listarNominas() {
         return this.prisma.nomina.findMany({
             orderBy: { fecha_creacion: 'desc' },
@@ -124,7 +137,6 @@ let NominaService = class NominaService {
         const horasExtra = Number(dto.horas_extra || 0);
         const bonificaciones = Number(dto.bonificaciones || 0);
         const comisiones = Number(dto.comisiones || 0);
-        const deducciones = Number(dto.deducciones || 0);
         const descuentosLegales = Number(dto.descuentos_legales || 0);
         const pagoHora = salarioBase / 30 / 8;
         const montoHorasExtra = horasExtra * pagoHora * 1.5;
@@ -134,6 +146,7 @@ let NominaService = class NominaService {
             comisiones;
         const igss = ingresoGravable * (igssPorcentaje / 100);
         const irtra = ingresoGravable * (irtraPorcentaje / 100);
+        const deducciones = descuentosLegales + igss + irtra;
         const salarioFinal = ingresoGravable -
             deducciones -
             descuentosLegales -
