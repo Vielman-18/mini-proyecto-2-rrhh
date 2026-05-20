@@ -27,16 +27,55 @@ export function useNomina() {
 
   const cargarDetalles = async (id: string) => {
     try {
-      console.log('Intentando cargar detalles para nómina:', id);
       const res = await api.get(`/nomina/${id}/detalle`);
       console.log('Detalles cargados exitosamente:', res.data);
       setDetalles(res.data || []);
     } catch (error) {
       console.error('Error al cargar detalles:', error);
-      toast.error('Error al cargar detalles de la nómina');
       setDetalles([]);
     }
   };
+
+const generarPdfEmpleado = async (detalleId: number) => {
+  try {
+    setLoading(true);
+
+    const res = await api.get(
+      `/nomina/detalle/${detalleId}/pdf`,
+      {
+        responseType: 'blob',
+      },
+    );
+
+    const url = window.URL.createObjectURL(
+      new Blob([res.data]),
+    );
+
+    const link = document.createElement('a');
+
+    link.href = url;
+
+    link.setAttribute(
+      'download',
+      `boleta_empleado_${detalleId}.pdf`,
+    );
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    toast.success('Boleta generada');
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al generar boleta');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const generarPdf = async () => {
   if (!nominaId) {
@@ -89,7 +128,6 @@ export function useNomina() {
       await api.put(`/nomina/${nominaId}/estado`, { estado: nuevoEstado });
       setEstadoActual(nuevoEstado);
       
-      // Actualizar el estado en el array de nóminas
       setNominas(nominas.map(n => 
         String(n.id) === String(nominaId) 
           ? { ...n, estado: nuevoEstado }
@@ -161,47 +199,45 @@ export function useNomina() {
     }
   };
 
-  const agregarDetalle = async () => {
-    if (!nominaId || !empleadoId) {
-      toast.error('Selecciona nómina y empleado');
-      return;
-    }
+ const agregarDetalle = async () => {
+  if (!nominaId || !empleadoId) {
+    toast.error('Selecciona nómina y empleado');
+    return;
+  }
 
-    const emp = empleados.find(e => String(e.id) === empleadoId);
+  const emp = empleados.find(e => String(e.id) === empleadoId);
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      await api.post('/nomina/detalle', {
-        nomina_id: Number(nominaId),
-        empleado_id: Number(empleadoId),
+    await api.post('/nomina/detalle', {
+      nomina_id: Number(nominaId),
+      empleado_id: Number(empleadoId),
 
-        salario_base: Number(emp?.salario || 0),  
-        horas_trabajadas: Number(horasTrabajadas),
-        horas_extra: Number(horasExtra),
+      salario_base: Number(emp?.salario || 0),
+      horas_trabajadas: Number(horasTrabajadas),
+      horas_extra: Number(horasExtra),
 
-        bonificaciones: Number(bonificaciones),
-        comisiones: Number(comisiones),
-        deducciones: Number(deducciones),
-        descuentos_legales: Number(descuentosLegales),
-      });
+      bonificaciones: Number(bonificaciones),
+      comisiones: Number(comisiones),
+      descuentos_legales: Number(descuentosLegales),
+    });
 
-      toast.success('Empleado agregado');
+    toast.success('Empleado agregado');
 
-      setEmpleadoId('');
-      setHorasExtra(0);
-      setBonificaciones(0);
-      setComisiones(0);
-      setDeducciones(0);
-      setDescuentosLegales(0);
+    setEmpleadoId('');
+    setHorasExtra(0);
+    setBonificaciones(0);
+    setComisiones(0);
+    setDescuentosLegales(0);
 
-      cargarDetalles(nominaId);
-    } catch {
-      toast.error('Error al agregar detalle');
-    } finally {
-      setLoading(false);
-    }
-  };
+    cargarDetalles(nominaId);
+  } catch {
+    toast.error('Error al agregar detalle');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const resumen = useMemo(() => {
     return {
@@ -253,7 +289,7 @@ export function useNomina() {
     setEstadoActual,
 
     resumen,
-
     generarPdf,
+    generarPdfEmpleado,
   };
 }

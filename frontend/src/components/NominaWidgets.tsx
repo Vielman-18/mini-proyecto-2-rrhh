@@ -9,6 +9,8 @@ const inputS =
 export function ModalPeriodo({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 
+  
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6">
       <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-8">
@@ -59,32 +61,36 @@ export function ModalDetalleEmpleado({
   isOpen,
   onClose,
   detalle,
+  h,
 }: any) {
   if (!isOpen || !detalle) return null;
 
   return (
-    <div className="
-      fixed inset-0 z-[200]
-      flex items-center justify-center
-      bg-black/70 backdrop-blur-sm
-      p-4
-    ">
-
-      <div className="
-        w-full max-w-2xl
-        bg-[#0b1017]
-        border border-white/10
-        rounded-3xl
-        overflow-hidden
-      ">
-
+    <div
+      className="
+        fixed inset-0 z-[200]
+        flex items-center justify-center
+        bg-black/70 backdrop-blur-sm
+        p-4
+      "
+    >
+      <div
+        className="
+          w-full max-w-2xl
+          bg-[#0b1017]
+          border border-white/10
+          rounded-3xl
+          overflow-hidden
+        "
+      >
         {/* HEADER */}
-        <div className="
-          flex items-center justify-between
-          px-6 py-5
-          border-b border-white/10
-        ">
-
+        <div
+          className="
+            flex items-center justify-between
+            px-6 py-5
+            border-b border-white/10
+          "
+        >
           <div>
             <h2 className="text-2xl font-black text-white">
               Detalle de Pago
@@ -115,9 +121,7 @@ export function ModalDetalleEmpleado({
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
 
           <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Empleado
-            </p>
+            <p className="text-slate-400 text-sm">Empleado</p>
 
             <h3 className="font-bold mt-1">
               {detalle.empleados?.nombres}{' '}
@@ -126,9 +130,7 @@ export function ModalDetalleEmpleado({
           </div>
 
           <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              ID Empleado
-            </p>
+            <p className="text-slate-400 text-sm">ID Empleado</p>
 
             <h3 className="font-bold mt-1">
               #{detalle.empleados?.id}
@@ -136,9 +138,7 @@ export function ModalDetalleEmpleado({
           </div>
 
           <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Salario Base
-            </p>
+            <p className="text-slate-400 text-sm">Salario Base</p>
 
             <h3 className="font-bold mt-1 text-cyan-400">
               {quetzal(detalle.salario_base)}
@@ -156,9 +156,7 @@ export function ModalDetalleEmpleado({
           </div>
 
           <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Horas Extra
-            </p>
+            <p className="text-slate-400 text-sm">Horas Extra</p>
 
             <h3 className="font-bold mt-1">
               {detalle.horas_extra}
@@ -205,12 +203,14 @@ export function ModalDetalleEmpleado({
             </h3>
           </div>
 
-          <div className="
-            bg-cyan-400/10
-            border border-cyan-400/20
-            rounded-2xl
-            p-4
-          ">
+          <div
+            className="
+              bg-cyan-400/10
+              border border-cyan-400/20
+              rounded-2xl
+              p-4
+            "
+          >
             <p className="text-cyan-300 text-sm">
               Salario Final
             </p>
@@ -219,15 +219,33 @@ export function ModalDetalleEmpleado({
               {quetzal(detalle.salario_final)}
             </h3>
           </div>
-
         </div>
 
         {/* FOOTER */}
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-6 flex gap-3">
+
+          <button
+            onClick={() =>
+              h.generarPdfEmpleado(detalle.id)
+            }
+            className="
+              flex-1
+              py-3
+              rounded-2xl
+              bg-emerald-400
+              hover:bg-emerald-300
+              transition
+              text-black
+              font-black
+            "
+          >
+            Descargar Recibo
+          </button>
+
           <button
             onClick={onClose}
             className="
-              w-full
+              flex-1
               py-3
               rounded-2xl
               bg-white
@@ -244,7 +262,6 @@ export function ModalDetalleEmpleado({
     </div>
   );
 }
-
 export function DrawerEmpleado({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 

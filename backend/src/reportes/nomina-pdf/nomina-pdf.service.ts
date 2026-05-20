@@ -5,6 +5,233 @@ import { Response } from 'express';
 @Injectable()
 export class NominaPdfService {
 
+  async generarBoletaEmpleado(
+  detalle: any,
+  res: Response,
+) {
+
+  const doc = new PDFDocument({
+    margin: 30,
+    size: 'A4',
+  });
+
+  res.setHeader('Content-Type', 'application/pdf');
+
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename=boleta_${detalle.empleados.id}.pdf`,
+  );
+
+  doc.pipe(res);
+
+  const empleado = detalle.empleados;
+  const nomina = detalle.nomina;
+
+  const salarioBase = Number(detalle.salario_base || 0);
+  const bonificaciones = Number(detalle.bonificaciones || 0);
+  const comisiones = Number(detalle.comisiones || 0);
+  const horasExtra = Number(detalle.monto_horas_extra || 0);
+
+  const ingresos =
+    salarioBase +
+    bonificaciones +
+    comisiones +
+    horasExtra;
+
+  const descuentos =
+    Number(detalle.igss || 0) +
+    Number(detalle.irtra || 0) +
+    Number(detalle.descuentos_legales || 0);
+
+  const salarioFinal = Number(detalle.salario_final || 0);
+
+  const crearBoleta = (yStart: number) => {
+
+    doc
+      .fontSize(15)
+      .font('Helvetica-Bold')
+      .text(
+        'RECIBO DE PAGO MENSUAL',
+        180,
+        yStart,
+      );
+
+    doc
+      .fontSize(10)
+      .font('Helvetica')
+      .text(
+        `Periodo: ${new Date(
+          nomina.fecha_inicio,
+        ).toLocaleDateString()} al ${new Date(
+          nomina.fecha_fin,
+        ).toLocaleDateString()}`,
+        360,
+        yStart + 20,
+      );
+
+    doc
+      .roundedRect(40, yStart + 50, 520, 70, 10)
+      .stroke();
+
+    doc
+      .fontSize(9)
+      .text(`Código: ${empleado.id}`, 55, yStart + 65);
+
+    doc.text(
+      `Nombre: ${empleado.nombres} ${empleado.apellidos}`,
+      55,
+      yStart + 82,
+    );
+
+    doc.text(
+      `Puesto: ${empleado.cargo || 'Empleado'}`,
+      55,
+      yStart + 99,
+    );
+
+    doc
+      .moveTo(40, yStart + 145)
+      .lineTo(560, yStart + 145)
+      .stroke();
+
+    doc
+      .font('Helvetica-Bold')
+      .text('INGRESOS', 130, yStart + 155);
+
+    doc.text('DESCUENTOS', 360, yStart + 155);
+
+    doc
+      .font('Helvetica')
+      .text(
+        'SALARIO BASE',
+        60,
+        yStart + 180,
+      );
+
+    doc.text(
+      `Q${salarioBase.toFixed(2)}`,
+      220,
+      yStart + 180,
+    );
+
+    doc.text(
+      'IGSS',
+      330,
+      yStart + 180,
+    );
+
+    doc.text(
+      `Q${Number(detalle.igss).toFixed(2)}`,
+      470,
+      yStart + 180,
+    );
+
+    doc.text(
+      'BONIFICACIONES',
+      60,
+      yStart + 200,
+    );
+
+    doc.text(
+      `Q${bonificaciones.toFixed(2)}`,
+      220,
+      yStart + 200,
+    );
+
+    doc.text(
+      'IRTRA',
+      330,
+      yStart + 200,
+    );
+
+    doc.text(
+      `Q${Number(detalle.irtra).toFixed(2)}`,
+      470,
+      yStart + 200,
+    );
+
+    doc.text(
+      'HORAS EXTRA',
+      60,
+      yStart + 220,
+    );
+
+    doc.text(
+      `Q${horasExtra.toFixed(2)}`,
+      220,
+      yStart + 220,
+    );
+
+    doc.text(
+      'DESC. LEGALES',
+      330,
+      yStart + 220,
+    );
+
+    doc.text(
+      `Q${Number(
+        detalle.descuentos_legales,
+      ).toFixed(2)}`,
+      470,
+      yStart + 220,
+    );
+
+    doc
+      .moveTo(40, yStart + 255)
+      .lineTo(560, yStart + 255)
+      .stroke();
+
+    doc
+      .font('Helvetica-Bold')
+      .text(
+        `TOTAL INGRESOS: Q${ingresos.toFixed(2)}`,
+        50,
+        yStart + 270,
+      );
+
+    doc.text(
+      `TOTAL DESCUENTOS: Q${descuentos.toFixed(2)}`,
+      320,
+      yStart + 270,
+    );
+
+    doc
+      .fontSize(14)
+      .text(
+        `LÍQUIDO A RECIBIR: Q${salarioFinal.toFixed(2)}`,
+        50,
+        yStart + 310,
+      );
+
+    doc
+      .moveTo(180, yStart + 380)
+      .lineTo(380, yStart + 380)
+      .stroke();
+
+    doc
+      .fontSize(9)
+      .text(
+        `${empleado.nombres} ${empleado.apellidos}`,
+        215,
+        yStart + 385,
+      );
+  };
+
+  crearBoleta(40);
+
+  doc
+    .dash(1, { space: 4 })
+    .moveTo(40, 420)
+    .lineTo(560, 420)
+    .stroke();
+
+  doc.undash();
+
+  crearBoleta(450);
+
+  doc.end();
+}
+
   async generar(
     nomina: any,
     detalles: any[],

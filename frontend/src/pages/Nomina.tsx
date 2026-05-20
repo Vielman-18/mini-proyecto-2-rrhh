@@ -9,7 +9,6 @@ import {
 
 export default function Nomina() {
   const h = useNomina();
-
   const [mOpen, setMOpen] = useState(false);
   const [dOpen, setDOpen] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -135,7 +134,6 @@ export default function Nomina() {
                   className="bg-[#05070a] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 disabled:opacity-60"
                 >
                   <option value="abierta">Abierta</option>
-                  <option value="procesada">Procesada</option>
                   <option value="cerrada">Cerrada</option>
                 </select>
               </div>
@@ -161,7 +159,6 @@ export default function Nomina() {
                   {quetzal(h.resumen.total)}
                 </h3>
               </div>
-
               <button
                 type="button"
                 onClick={h.generarPdf}
@@ -240,6 +237,7 @@ export default function Nomina() {
         isOpen={detalleOpen}
         onClose={() => setDetalleOpen(false)}
         detalle={detalle}
+        h={h}
       />
 
       <DrawerEmpleado

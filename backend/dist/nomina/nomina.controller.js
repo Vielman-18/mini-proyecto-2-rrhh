@@ -29,6 +29,9 @@ let NominaController = class NominaController {
     async cambiarEstado(id, dto) {
         return this.nominaService.cambiarEstado(Number(id), dto.estado);
     }
+    async generarBoletaEmpleado(id, res) {
+        return this.nominaService.generarBoletaEmpleado(Number(id), res);
+    }
     listarDetallePorNomina(id) {
         return this.nominaService.listarDetallePorNomina(Number(id));
     }
@@ -61,6 +64,14 @@ __decorate([
     __metadata("design:paramtypes", [String, cambiar_estado_dto_1.CambiarEstadoDto]),
     __metadata("design:returntype", Promise)
 ], NominaController.prototype, "cambiarEstado", null);
+__decorate([
+    (0, common_1.Get)('detalle/:id/pdf'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "generarBoletaEmpleado", null);
 __decorate([
     (0, common_1.Get)(':id/detalle'),
     __param(0, (0, common_1.Param)('id')),
