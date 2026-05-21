@@ -47,6 +47,9 @@ let NominaController = class NominaController {
     listar() {
         return this.nominaService.listarNominas();
     }
+    eliminarEmpleadoDeNomina(nominaId, empleadoId) {
+        return this.nominaService.eliminarEmpleadoDeNomina(Number(nominaId), Number(empleadoId));
+    }
 };
 exports.NominaController = NominaController;
 __decorate([
@@ -107,6 +110,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "listar", null);
+__decorate([
+    (0, common_1.Delete)(':nominaId/empleado/:empleadoId'),
+    __param(0, (0, common_1.Param)('nominaId')),
+    __param(1, (0, common_1.Param)('empleadoId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], NominaController.prototype, "eliminarEmpleadoDeNomina", null);
 exports.NominaController = NominaController = __decorate([
     (0, common_1.Controller)('nomina'),
     __metadata("design:paramtypes", [nomina_service_1.NominaService])

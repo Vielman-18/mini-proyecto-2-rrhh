@@ -15,7 +15,7 @@ export function useNomina() {
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
 
-  const [horasTrabajadas, setHorasTrabajadas] = useState(160);
+  const [horasTrabajadas, setHorasTrabajadas] = useState(0);
   const [horasExtra, setHorasExtra] = useState(0);
   const [bonificaciones, setBonificaciones] = useState(0);
   const [comisiones, setComisiones] = useState(0);
@@ -25,16 +25,47 @@ export function useNomina() {
   const [loading, setLoading] = useState(false);
   const [estadoActual, setEstadoActual] = useState<string>('');
 
-  const cargarDetalles = async (id: string) => {
-    try {
-      const res = await api.get(`/nomina/${id}/detalle`);
-      console.log('Detalles cargados exitosamente:', res.data);
-      setDetalles(res.data || []);
-    } catch (error) {
-      console.error('Error al cargar detalles:', error);
-      setDetalles([]);
+  const eliminarEmpleadoDeNomina = async (empleadoId: number) => {
+  if (!nominaId) {
+    toast.error('Selecciona una nómina');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    await api.delete(`/nomina/${nominaId}/empleado/${empleadoId}`);
+
+    toast.success('Empleado removido de la nómina');
+
+    await cargarDetalles(nominaId);
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al eliminar de la nómina');
+  } finally {
+    setLoading(false);
+  }
+};
+
+ const cargarDetalles = async (id?: string) => {
+  try {
+    if (!id || isNaN(Number(id))) {
+      console.error('ID inválido:', id);
+      return;
     }
-  };
+
+    const res = await api.get(
+      `/nomina/${Number(id)}/detalle`,
+    );
+
+    console.log('Detalles cargados:', res.data);
+
+    setDetalles(res.data || []);
+  } catch (error) {
+    console.error('Error al cargar detalles:', error);
+    setDetalles([]);
+  }
+};
 
 const generarPdfEmpleado = async (detalleId: number) => {
   try {
@@ -185,13 +216,20 @@ const generarPdfEmpleado = async (detalleId: number) => {
         estado: 'abierta',
       });
 
-      const id = String(res.data.id);
+      const primeraNomina = res.data[0];
+
+      if (!primeraNomina) {
+        toast.error('No se creó la nómina');
+        return;
+      }
+
+      const id = String(primeraNomina.id);
       setNominaId(id);
 
       toast.success('Nómina creada');
 
       await cargarDatos();
-      cargarDetalles(id);
+      await cargarDetalles(id);
     } catch {
       toast.error('Error al crear nómina');
     } finally {
@@ -199,9 +237,13 @@ const generarPdfEmpleado = async (detalleId: number) => {
     }
   };
 
- const agregarDetalle = async () => {
-  if (!nominaId || !empleadoId) {
-    toast.error('Selecciona nómina y empleado');
+const agregarDetalle = async () => {
+  if (!nominaId || isNaN(Number(nominaId))) {
+    toast.error('Nómina inválida');
+    return;
+  }
+  if (!empleadoId || isNaN(Number(empleadoId))) {
+    toast.error('Empleado inválido');
     return;
   }
 
@@ -231,7 +273,7 @@ const generarPdfEmpleado = async (detalleId: number) => {
     setComisiones(0);
     setDescuentosLegales(0);
 
-    cargarDetalles(nominaId);
+    await cargarDetalles(nominaId);
   } catch {
     toast.error('Error al agregar detalle');
   } finally {
@@ -291,5 +333,6 @@ const generarPdfEmpleado = async (detalleId: number) => {
     resumen,
     generarPdf,
     generarPdfEmpleado,
+    eliminarEmpleadoDeNomina,
   };
 }

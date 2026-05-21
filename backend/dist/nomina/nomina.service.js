@@ -113,6 +113,20 @@ let NominaService = class NominaService {
             data: { estado },
         });
     }
+    async eliminarEmpleadoDeNomina(nominaId, empleadoId) {
+        const detalle = await this.prisma.detalle_nomina.findFirst({
+            where: {
+                nomina_id: nominaId,
+                empleado_id: empleadoId,
+            },
+        });
+        if (!detalle) {
+            throw new common_1.NotFoundException('El empleado no está en esta nómina');
+        }
+        return this.prisma.detalle_nomina.delete({
+            where: { id: detalle.id },
+        });
+    }
     async listarNominas() {
         return this.prisma.nomina.findMany({
             orderBy: { fecha_creacion: 'desc' },
@@ -146,29 +160,39 @@ let NominaService = class NominaService {
         const parametros = await this.prisma.parametros_nomina.findMany({
             where: { activo: true },
         });
-        const igssPorcentaje = Number(parametros.find(p => p.nombre.toUpperCase() === 'IGSS')?.valor) || 0;
-        const irtraPorcentaje = Number(parametros.find(p => p.nombre.toUpperCase() === 'IRTRA')?.valor) || 0;
-        const salarioBase = Number(dto.salario_base ?? empleado.salario ?? 0);
+        const igssPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IGSS')?.valor) || 4.83;
+        const irtraPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IRTRA')?.valor) || 1;
+        const salarioMensual = Number(empleado.salario);
+        if (!salarioMensual || salarioMensual <= 0) {
+            throw new Error('Salario inválido en base de datos');
+        }
+        const fechaInicio = new Date(nominaExiste.fecha_inicio);
+        const fechaFin = new Date(nominaExiste.fecha_fin);
+        const diasPeriodo = Math.max(1, Math.round((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24)));
+        const salarioDiario = salarioMensual / 30;
+        const salarioBase = salarioDiario * diasPeriodo;
         const horasExtra = Number(dto.horas_extra ?? 0);
         const bonificaciones = Number(dto.bonificaciones ?? 0);
         const comisiones = Number(dto.comisiones ?? 0);
         const descuentosLegales = Number(dto.descuentos_legales ?? 0);
-        const pagoHora = salarioBase / 30 / 8;
-        const montoHorasExtra = horasExtra * pagoHora * 1.5;
+        const valorHora = salarioDiario / 8;
+        const montoHorasExtra = horasExtra * valorHora * 1.5;
         const ingresoGravable = salarioBase +
             montoHorasExtra +
             bonificaciones +
             comisiones;
         const igss = ingresoGravable * (igssPorcentaje / 100);
         const irtra = ingresoGravable * (irtraPorcentaje / 100);
-        const deducciones = descuentosLegales + igss;
-        const salarioFinal = ingresoGravable - deducciones;
+        const deducciones = descuentosLegales +
+            igss +
+            irtra;
+        const salrioFinal = ingresoGravable - deducciones;
+        const salarioFinal = salrioFinal - deducciones;
         return this.prisma.detalle_nomina.create({
             data: {
                 nomina_id: dto.nomina_id,
                 empleado_id: dto.empleado_id,
                 salario_base: salarioBase,
-                horas_trabajadas: dto.horas_trabajadas || 0,
                 horas_extra: horasExtra,
                 monto_horas_extra: montoHorasExtra,
                 bonificaciones,

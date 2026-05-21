@@ -16,6 +16,8 @@ export class CrearDetalleNominaDto {
   @Min(0)
   salario_base!: number;
 
+ 
+
   @ApiProperty({ example: 160 })
   @IsOptional()
   @IsNumber()

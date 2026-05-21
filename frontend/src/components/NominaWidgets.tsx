@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const quetzal = (v: any) =>
   `Q${Number(v || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
 
@@ -17,9 +15,35 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
         <h2 className="text-2xl font-black mb-6">Crear Nómina</h2>
 
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm text-slate-400 mb-2">Tipo de Período</label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => h.setTipoPeriodo('mensual')}
+                className={`flex-1 py-3 rounded-xl font-black transition ${
+                  h.tipoPeriodo === 'mensual'
+                    ? 'bg-cyan-400 text-black'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                Mensual
+              </button>
+              <button
+                onClick={() => h.setTipoPeriodo('quincenal')}
+                className={`flex-1 py-3 rounded-xl font-black transition ${
+                  h.tipoPeriodo === 'quincenal'
+                    ? 'bg-cyan-400 text-black'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+              >
+                Quincenal
+              </button>
+            </div>
+          </div>
+
           <input
             className={inputS}
-            placeholder="Periodo"
+            placeholder="Periodo (ej: 2026-05)"
             value={h.periodo}
             onChange={(e) => h.setPeriodo(e.target.value)}
           />
@@ -242,6 +266,22 @@ export function ModalDetalleEmpleado({
             Descargar Recibo
           </button>
 
+                  <button
+          onClick={() => h.eliminarEmpleadoDeNomina(detalle.empleados.id)}
+          className="
+            flex-1
+            py-3
+            rounded-2xl
+            bg-red-500
+            hover:bg-red-400
+            transition
+            text-black
+            font-black
+          "
+        >
+          Quitar de nómina
+        </button>
+
           <button
             onClick={onClose}
             className="
@@ -390,9 +430,6 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
                 }
               />
             </div>
-
-            
-
             <div>
               <label className="block text-sm text-slate-400 mb-2">
                 Bonificaciones
