@@ -13,6 +13,18 @@ CREATE TABLE "ajustes_nomina" (
 );
 
 -- CreateTable
+CREATE TABLE "departamentos" (
+    "id" SERIAL NOT NULL,
+    "nombre" VARCHAR(100) NOT NULL,
+    "descripcion" TEXT,
+    "estado" VARCHAR(20) DEFAULT 'activo',
+    "creado_por" INTEGER NOT NULL,
+    "fecha_creacion" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "departamentos_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "detalle_nomina" (
     "id" SERIAL NOT NULL,
     "nomina_id" INTEGER NOT NULL,
@@ -40,8 +52,8 @@ CREATE TABLE "documentos" (
     "nombre_archivo" VARCHAR(255) NOT NULL,
     "ruta_archivo" TEXT NOT NULL,
     "tipo_documento" VARCHAR(100) NOT NULL,
+    "archivo_binario" BYTEA,
     "fecha_carga" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
-    "fecha_creacion" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "documentos_pkey" PRIMARY KEY ("id")
 );
@@ -50,6 +62,9 @@ CREATE TABLE "documentos" (
 CREATE TABLE "empleados" (
     "id" SERIAL NOT NULL,
     "usuario_id" INTEGER,
+    "departamento_id" INTEGER,
+    "puesto_id" INTEGER,
+    "email" VARCHAR(150) NOT NULL,
     "nombres" VARCHAR(100) NOT NULL,
     "apellidos" VARCHAR(100) NOT NULL,
     "dpi" VARCHAR(20) NOT NULL,
@@ -57,9 +72,7 @@ CREATE TABLE "empleados" (
     "direccion" TEXT,
     "telefono" VARCHAR(20),
     "salario" DECIMAL(10,2) NOT NULL,
-    "cargo" VARCHAR(100),
-    "departamento" VARCHAR(100),
-    "estado" VARCHAR(20) NOT NULL DEFAULT 'activo',
+    "estado" VARCHAR(20) DEFAULT 'activo',
     "fecha_creacion" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "empleados_pkey" PRIMARY KEY ("id")
@@ -70,9 +83,21 @@ CREATE TABLE "estado_expediente" (
     "id" SERIAL NOT NULL,
     "empleado_id" INTEGER NOT NULL,
     "estado" VARCHAR(20) NOT NULL,
+    "observacion" TEXT,
     "fecha_revision" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "estado_expediente_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "logspdf" (
+    "id" SERIAL NOT NULL,
+    "nombre_archivo" VARCHAR(255) NOT NULL,
+    "ruta" VARCHAR(255),
+    "nomina_id" INTEGER NOT NULL,
+    "fecha_generacion" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "logspdf_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -82,7 +107,7 @@ CREATE TABLE "nomina" (
     "periodo" VARCHAR(20) NOT NULL,
     "fecha_inicio" DATE NOT NULL,
     "fecha_fin" DATE NOT NULL,
-    "estado" VARCHAR(20) NOT NULL DEFAULT 'abierta',
+    "estado" VARCHAR(20) DEFAULT 'abierta',
     "fecha_creacion" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "nomina_pkey" PRIMARY KEY ("id")
@@ -98,6 +123,20 @@ CREATE TABLE "parametros_nomina" (
     "fecha_creacion" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "parametros_nomina_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "puestos" (
+    "id" SERIAL NOT NULL,
+    "departamento_id" INTEGER NOT NULL,
+    "nombre" VARCHAR(100) NOT NULL,
+    "descripcion" TEXT,
+    "salario_base" DECIMAL(10,2),
+    "estado" VARCHAR(20) DEFAULT 'activo',
+    "creado_por" INTEGER NOT NULL,
+    "fecha_creacion" TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "puestos_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -125,7 +164,13 @@ CREATE TABLE "usuarios" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "departamentos_nombre_key" ON "departamentos"("nombre");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "empleados_usuario_id_key" ON "empleados"("usuario_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "empleados_email_key" ON "empleados"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "empleados_dpi_key" ON "empleados"("dpi");
@@ -143,7 +188,10 @@ CREATE UNIQUE INDEX "usuarios_correo_key" ON "usuarios"("correo");
 ALTER TABLE "ajustes_nomina" ADD CONSTRAINT "fk_ajuste_detalle_nomina" FOREIGN KEY ("detalle_nomina_id") REFERENCES "detalle_nomina"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "ajustes_nomina" ADD CONSTRAINT "fk_ajuste_usuario" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE NO ACTION;
+ALTER TABLE "ajustes_nomina" ADD CONSTRAINT "fk_ajuste_usuario" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "departamentos" ADD CONSTRAINT "fk_departamento_usuario" FOREIGN KEY ("creado_por") REFERENCES "usuarios"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "detalle_nomina" ADD CONSTRAINT "fk_detalle_nomina_empleado" FOREIGN KEY ("empleado_id") REFERENCES "empleados"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
@@ -155,13 +203,28 @@ ALTER TABLE "detalle_nomina" ADD CONSTRAINT "fk_detalle_nomina_nomina" FOREIGN K
 ALTER TABLE "documentos" ADD CONSTRAINT "fk_documento_empleado" FOREIGN KEY ("empleado_id") REFERENCES "empleados"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "documentos" ADD CONSTRAINT "fk_documento_usuario" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE RESTRICT ON UPDATE NO ACTION;
+ALTER TABLE "documentos" ADD CONSTRAINT "fk_documento_usuario" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "empleados" ADD CONSTRAINT "fk_empleado_usuario" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+ALTER TABLE "empleados" ADD CONSTRAINT "fk_empleado_departamento" FOREIGN KEY ("departamento_id") REFERENCES "departamentos"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "empleados" ADD CONSTRAINT "fk_empleado_puesto" FOREIGN KEY ("puesto_id") REFERENCES "puestos"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "empleados" ADD CONSTRAINT "fk_empleado_usuario" FOREIGN KEY ("usuario_id") REFERENCES "usuarios"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "estado_expediente" ADD CONSTRAINT "fk_estado_expediente_empleado" FOREIGN KEY ("empleado_id") REFERENCES "empleados"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "logspdf" ADD CONSTRAINT "fk_logspdf_nomina" FOREIGN KEY ("nomina_id") REFERENCES "nomina"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "puestos" ADD CONSTRAINT "fk_puesto_departamento" FOREIGN KEY ("departamento_id") REFERENCES "departamentos"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "puestos" ADD CONSTRAINT "fk_puesto_usuario" FOREIGN KEY ("creado_por") REFERENCES "usuarios"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "registro_academico" ADD CONSTRAINT "fk_academico_empleado" FOREIGN KEY ("empleado_id") REFERENCES "empleados"("id") ON DELETE CASCADE ON UPDATE NO ACTION;

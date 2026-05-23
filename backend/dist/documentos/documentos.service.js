@@ -28,6 +28,7 @@ let DocumentosService = class DocumentosService {
                 nombre_archivo: file.originalname,
                 ruta_archivo: file.originalname,
                 tipo_documento: body.tipo_documento,
+                archivo_binario: file.buffer,
             },
         });
     }
@@ -39,7 +40,30 @@ let DocumentosService = class DocumentosService {
             orderBy: {
                 fecha_carga: 'desc',
             },
+            select: {
+                id: true,
+                nombre_archivo: true,
+                tipo_documento: true,
+                fecha_carga: true,
+                empleado_id: true,
+                usuario_id: true,
+                ruta_archivo: true,
+            },
         });
+    }
+    async obtenerArchivo(id) {
+        const doc = await this.prisma.documentos.findUnique({
+            where: { id },
+            select: {
+                archivo_binario: true,
+                nombre_archivo: true,
+                tipo_documento: true,
+            },
+        });
+        if (!doc || !doc.archivo_binario) {
+            throw new common_1.BadRequestException('Archivo no encontrado');
+        }
+        return doc;
     }
 };
 exports.DocumentosService = DocumentosService;
