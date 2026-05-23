@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
@@ -64,7 +64,9 @@ export default function AdminHome() {
     }
   };
 
-  useState(() => { cargarEmpleados(); });
+  useEffect(() => {
+    cargarEmpleados();
+  }, []);
 
   const cerrarSesion = () => {
     localStorage.removeItem('token');
@@ -89,7 +91,7 @@ export default function AdminHome() {
     setRol('empleado');
   };
 
-  const crearAcceso = async (e: React.FormEvent<HTMLFormElement>) => {
+  const crearAcceso = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!empleadoSeleccionado) return;
     if (!correo.trim()) { toast.error('El correo es obligatorio'); return; }
@@ -158,8 +160,6 @@ export default function AdminHome() {
   });
 
   const totalEmpleados = empleados.length;
-  const accesosCreados = empleados.filter((e) => e.usuario_id).length;
-  const accesosPendientes = totalEmpleados - accesosCreados;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#020617] px-5 py-6 text-white">
