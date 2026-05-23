@@ -7,8 +7,6 @@ const inputS =
 export function ModalPeriodo({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 
-  
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6">
       <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-8">
@@ -16,7 +14,10 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm text-slate-400 mb-2">Tipo de Período</label>
+            <label className="block text-sm text-slate-400 mb-2">
+              Tipo de Período
+            </label>
+
             <div className="flex gap-3">
               <button
                 onClick={() => h.setTipoPeriodo('mensual')}
@@ -28,6 +29,7 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
               >
                 Mensual
               </button>
+
               <button
                 onClick={() => h.setTipoPeriodo('quincenal')}
                 className={`flex-1 py-3 rounded-xl font-black transition ${
@@ -41,26 +43,19 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
             </div>
           </div>
 
-          <input
-            className={inputS}
-            placeholder="Periodo (ej: 2026-05)"
-            value={h.periodo}
-            onChange={(e) => h.setPeriodo(e.target.value)}
-          />
+         <input
+  type="month"
+  className={inputS}
+  value={h.mesInicio}
+  onChange={(e) => h.setMesInicio(e.target.value)}
+/>
 
-          <input
-            type="date"
-            className={inputS}
-            value={h.fechaInicio}
-            onChange={(e) => h.setFechaInicio(e.target.value)}
-          />
-
-          <input
-            type="date"
-            className={inputS}
-            value={h.fechaFin}
-            onChange={(e) => h.setFechaFin(e.target.value)}
-          />
+<input
+  type="month"
+  className={inputS}
+  value={h.mesFin}
+  onChange={(e) => h.setMesFin(e.target.value)}
+/>
 
           <button
             onClick={() => {
@@ -72,7 +67,10 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
             CREAR
           </button>
 
-          <button onClick={onClose} className="text-xs text-slate-400 w-full">
+          <button
+            onClick={onClose}
+            className="text-xs text-slate-400 w-full"
+          >
             Cerrar
           </button>
         </div>

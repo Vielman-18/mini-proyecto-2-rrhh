@@ -140,12 +140,13 @@ export default function Nomina() {
             </div>
 
             <button
-              onClick={() => setDOpen(true)}
+              onClick={h.agregarTodosEmpleados}
               disabled={h.estadoActual === 'cerrada' || h.loading}
               className="px-5 py-3 bg-white hover:bg-slate-200 transition text-black font-black rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              + Agregar empleado
+              + Agregar todos empleado
             </button>
+       
           </div>
 
           <div className="mb-6 bg-[#05070a] border border-white/10 rounded-2xl p-5 flex items-center justify-between">

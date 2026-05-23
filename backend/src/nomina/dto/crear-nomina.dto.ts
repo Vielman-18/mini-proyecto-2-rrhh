@@ -1,29 +1,50 @@
-import { IsDateString, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+
+export enum TipoPeriodo {
+  MENSUAL = 'mensual',
+  QUINCENAL = 'quincenal',
+}
 
 export class CrearNominaDto {
-  @ApiProperty({ example: 'mensual' })
-  @IsNotEmpty()
-  @IsIn(['mensual', 'quincenal'])
-  tipo_periodo!: string;
+  @ApiProperty({
+    example: 'mensual',
+    enum: TipoPeriodo,
+    description: 'Tipo de nómina a generar',
+  })
+  @IsEnum(TipoPeriodo)
+  tipo_periodo!: TipoPeriodo;
+  
 
-  @ApiProperty({ example: '2026-04' })
-  @IsNotEmpty()
-  @IsString()
-  periodo!: string;
-
-  @ApiProperty({ example: '2026-04-01' })
-  @IsNotEmpty()
+  @ApiProperty({
+    example: '2026-01-01',
+    description: 'Fecha de inicio del rango de generación',
+  })
   @IsDateString()
-  fecha_inicio!: string;
+  fecha_inicio!: Date;
 
-  @ApiProperty({ example: '2026-04-30' })
-  @IsNotEmpty()
+  @ApiProperty({
+    example: '2026-12-31',
+    description: 'Fecha final del rango de generación',
+  })
   @IsDateString()
-  fecha_fin!: string;
+  fecha_fin!: Date;
 
-  @ApiProperty({ example: 'abierta', required: false })
+  @ApiPropertyOptional({
+    example: 'abierta',
+    description: 'Estado de la nómina',
+  })
   @IsOptional()
-  @IsIn(['abierta', 'cerrada'])
+  @IsString()
   estado?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-01',
+    description: 'Periodo manual (solo si no es generación automática)',
+  })
+  @IsOptional()
+  @IsString()
+  periodo?: string;
+
+
 }

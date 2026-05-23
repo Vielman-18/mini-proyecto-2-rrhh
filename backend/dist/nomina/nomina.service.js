@@ -20,6 +20,66 @@ let NominaService = class NominaService {
         this.prisma = prisma;
         this.nominaPdfService = nominaPdfService;
     }
+    async agregarTodosEmpleadosANomina(nominaId) {
+        const nomina = await this.prisma.nomina.findUnique({
+            where: { id: nominaId },
+        });
+        if (!nomina) {
+            throw new common_1.NotFoundException('Nómina no encontrada');
+        }
+        const empleados = await this.prisma.empleados.findMany({
+            where: { estado: 'activo' },
+        });
+        const parametros = await this.prisma.parametros_nomina.findMany({
+            where: { activo: true },
+        });
+        const igssPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IGSS')?.valor) || 4.83;
+        const irtraPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IRTRA')?.valor) || 1;
+        const resultados = [];
+        for (const empleado of empleados) {
+            const existeDetalle = await this.prisma.detalle_nomina.findFirst({
+                where: {
+                    nomina_id: nominaId,
+                    empleado_id: empleado.id,
+                },
+            });
+            if (existeDetalle)
+                continue;
+            const salarioMensual = Number(empleado.salario);
+            let salarioBase = salarioMensual;
+            if (nomina.tipo_periodo === 'quincenal') {
+                salarioBase = salarioMensual / 2;
+            }
+            const valorHora = salarioMensual / 240;
+            const ingresoGravable = salarioBase;
+            const igss = ingresoGravable * (igssPorcentaje / 100);
+            const irtra = ingresoGravable * (irtraPorcentaje / 100);
+            const deducciones = igss + irtra;
+            const salarioFinal = ingresoGravable - deducciones;
+            const detalle = await this.prisma.detalle_nomina.create({
+                data: {
+                    nomina_id: nominaId,
+                    empleado_id: empleado.id,
+                    salario_base: salarioBase,
+                    horas_extra: 0,
+                    monto_horas_extra: 0,
+                    bonificaciones: 0,
+                    comisiones: 0,
+                    igss,
+                    irtra,
+                    descuentos_legales: 0,
+                    deducciones,
+                    salario_final: salarioFinal,
+                },
+            });
+            resultados.push(detalle);
+        }
+        return {
+            total_agregados: resultados.length,
+            nomina_id: nominaId,
+            detalles: resultados,
+        };
+    }
     async generarBoletaEmpleado(detalleId, res) {
         const detalle = await this.prisma.detalle_nomina.findUnique({
             where: { id: detalleId },
@@ -36,23 +96,25 @@ let NominaService = class NominaService {
     async crearNomina(dto) {
         const inicio = new Date(dto.fecha_inicio);
         const fin = new Date(dto.fecha_fin);
+        if (inicio > fin) {
+            throw new common_1.BadRequestException('La fecha_inicio no puede ser mayor que fecha_fin');
+        }
         const nominas = [];
         const crear = async (data) => this.prisma.nomina.create({ data });
         if (dto.tipo_periodo === 'mensual') {
+            const nominas = [];
             let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
             while (cursor <= fin) {
                 const year = cursor.getFullYear();
                 const month = cursor.getMonth();
                 const mesInicio = new Date(year, month, 1);
                 const mesFin = new Date(year, month + 1, 0);
-                const realInicio = mesInicio < inicio ? inicio : mesInicio;
-                const realFin = mesFin > fin ? fin : mesFin;
-                if (realInicio <= realFin) {
+                if (mesFin >= inicio && mesInicio <= fin) {
                     nominas.push(await crear({
                         tipo_periodo: dto.tipo_periodo,
-                        periodo: `${year}-${month + 1}`,
-                        fecha_inicio: realInicio,
-                        fecha_fin: realFin,
+                        periodo: `${year}-${String(month + 1).padStart(2, '0')}`,
+                        fecha_inicio: mesInicio,
+                        fecha_fin: mesFin,
                         estado: dto.estado || 'abierta',
                     }));
                 }
@@ -61,10 +123,12 @@ let NominaService = class NominaService {
             return nominas;
         }
         if (dto.tipo_periodo === 'quincenal') {
+            const nominas = [];
             let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
             while (cursor <= fin) {
                 const year = cursor.getFullYear();
                 const month = cursor.getMonth();
+                const periodoBase = `${year}-${String(month + 1).padStart(2, '0')}`;
                 const q1Start = new Date(year, month, 1);
                 const q1End = new Date(year, month, 15);
                 const q2Start = new Date(year, month, 16);
@@ -72,18 +136,18 @@ let NominaService = class NominaService {
                 if (q1End >= inicio && q1Start <= fin) {
                     nominas.push(await crear({
                         tipo_periodo: dto.tipo_periodo,
-                        periodo: `${year}-${month + 1}-Q1`,
-                        fecha_inicio: q1Start < inicio ? inicio : q1Start,
-                        fecha_fin: q1End > fin ? fin : q1End,
+                        periodo: `${periodoBase}-Q1`,
+                        fecha_inicio: q1Start,
+                        fecha_fin: q1End,
                         estado: dto.estado || 'abierta',
                     }));
                 }
                 if (q2End >= inicio && q2Start <= fin) {
                     nominas.push(await crear({
                         tipo_periodo: dto.tipo_periodo,
-                        periodo: `${year}-${month + 1}-Q2`,
-                        fecha_inicio: q2Start < inicio ? inicio : q2Start,
-                        fecha_fin: q2End > fin ? fin : q2End,
+                        periodo: `${periodoBase}-Q2`,
+                        fecha_inicio: q2Start,
+                        fecha_fin: q2End,
                         estado: dto.estado || 'abierta',
                     }));
                 }
@@ -141,13 +205,15 @@ let NominaService = class NominaService {
         const empleado = await this.prisma.empleados.findUnique({
             where: { id: dto.empleado_id },
         });
-        if (!empleado)
+        if (!empleado) {
             throw new common_1.NotFoundException('Empleado no encontrado');
-        const nominaExiste = await this.prisma.nomina.findUnique({
+        }
+        const nomina = await this.prisma.nomina.findUnique({
             where: { id: dto.nomina_id },
         });
-        if (!nominaExiste)
+        if (!nomina) {
             throw new common_1.NotFoundException('Nómina no encontrada');
+        }
         const existeDetalle = await this.prisma.detalle_nomina.findFirst({
             where: {
                 nomina_id: dto.nomina_id,
@@ -155,27 +221,25 @@ let NominaService = class NominaService {
             },
         });
         if (existeDetalle) {
-            throw new common_1.NotFoundException('Este empleado ya está agregado en esta nómina');
+            throw new common_1.BadRequestException('Este empleado ya está agregado en esta nómina');
         }
         const parametros = await this.prisma.parametros_nomina.findMany({
             where: { activo: true },
         });
-        const igssPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IGSS')?.valor) || 4.83;
-        const irtraPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IRTRA')?.valor) || 1;
+        const igssPorcentaje = Number(parametros.find((p) => p.nombre?.toUpperCase() === 'IGSS')?.valor) || 4.83;
+        const irtraPorcentaje = Number(parametros.find((p) => p.nombre?.toUpperCase() === 'IRTRA')?.valor) || 1;
         const salarioMensual = Number(empleado.salario);
-        if (!salarioMensual || salarioMensual <= 0) {
-            throw new Error('Salario inválido en base de datos');
+        let salarioBase = salarioMensual;
+        if (nomina.tipo_periodo === 'quincenal') {
+            salarioBase = salarioMensual / 2;
         }
-        const fechaInicio = new Date(nominaExiste.fecha_inicio);
-        const fechaFin = new Date(nominaExiste.fecha_fin);
-        const diasPeriodo = Math.max(1, Math.round((fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24)));
-        const salarioDiario = salarioMensual / 30;
-        const salarioBase = salarioDiario * diasPeriodo;
-        const horasExtra = Number(dto.horas_extra ?? 0);
-        const bonificaciones = Number(dto.bonificaciones ?? 0);
-        const comisiones = Number(dto.comisiones ?? 0);
-        const descuentosLegales = Number(dto.descuentos_legales ?? 0);
-        const valorHora = salarioDiario / 8;
+        const horasExtra = Number(dto.horas_extra || 0);
+        const bonificaciones = Number(dto.bonificaciones || 0);
+        const comisiones = Number(dto.comisiones || 0);
+        const descuentosLegales = Number(dto.descuentos_legales || 0);
+        const valorHora = nomina.tipo_periodo === 'quincenal'
+            ? salarioMensual / 240
+            : salarioMensual / 240;
         const montoHorasExtra = horasExtra * valorHora * 1.5;
         const ingresoGravable = salarioBase +
             montoHorasExtra +
@@ -186,8 +250,7 @@ let NominaService = class NominaService {
         const deducciones = descuentosLegales +
             igss +
             irtra;
-        const salrioFinal = ingresoGravable - deducciones;
-        const salarioFinal = salrioFinal - deducciones;
+        const salarioFinal = ingresoGravable - deducciones;
         return this.prisma.detalle_nomina.create({
             data: {
                 nomina_id: dto.nomina_id,

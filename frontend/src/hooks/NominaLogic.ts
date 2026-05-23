@@ -14,6 +14,8 @@ export function useNomina() {
   const [periodo, setPeriodo] = useState('');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
+  const [mesInicio, setMesInicio] = useState('');
+const [mesFin, setMesFin] = useState('');
 
   const [horasTrabajadas, setHorasTrabajadas] = useState(0);
   const [horasExtra, setHorasExtra] = useState(0);
@@ -194,48 +196,78 @@ const generarPdfEmpleado = async (detalleId: number) => {
     cargarDatos();
   }, []);
 
-  const crearNomina = async () => {
-    if (!periodo || !fechaInicio || !fechaFin) {
-      toast.error('Completa los campos');
+const crearNomina = async () => {
+  if (!mesInicio || !mesFin) {
+    toast.error('Selecciona los meses');
+    return;
+  }
+
+  const mesPattern = /^\d{4}-\d{2}$/;
+  if (!mesPattern.test(mesInicio) || !mesPattern.test(mesFin)) {
+    toast.error('Mes final inválido');
+    return;
+  }
+
+  const inicio = new Date(`${mesInicio}-01`);
+  const fin = new Date(`${mesFin}-01`);
+
+  if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
+    toast.error('Mes final inválido');
+    return;
+  }
+
+  if (fin < inicio) {
+    toast.error('Mes final inválido');
+    return;
+  }
+
+  const ultimoDia = new Date(
+    fin.getFullYear(),
+    fin.getMonth() + 1,
+    0
+  ).getDate();
+
+  const fechaInicio = `${mesInicio}-01`;
+  const fechaFin = `${mesFin}-${String(ultimoDia).padStart(2, '0')}`;
+
+  try {
+    setLoading(true);
+
+    const res = await api.post('/nomina', {
+      tipo_periodo: tipoPeriodo,
+      fecha_inicio: fechaInicio,
+      fecha_fin: fechaFin,
+      estado: 'abierta',
+    });
+
+    const data = Array.isArray(res.data) ? res.data : [res.data];
+
+    if (!data || data.length === 0) {
+      toast.error('No se creó la nómina');
       return;
     }
 
-    if (new Date(fechaFin) < new Date(fechaInicio)) {
-      toast.error('Fechas inválidas');
-      return;
-    }
+    const nominaSeleccionada = String(
+      data[data.length - 1]?.id || data[0]?.id
+    );
 
-    try {
-      setLoading(true);
+    setNominaId(nominaSeleccionada);
 
-      const res = await api.post('/nomina', {
-        tipo_periodo: tipoPeriodo,
-        periodo,
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
-        estado: 'abierta',
-      });
+    toast.success(
+      data.length > 1
+        ? `Se generaron ${data.length} nóminas`
+        : 'Nómina generada'
+    );
 
-      const primeraNomina = res.data[0];
-
-      if (!primeraNomina) {
-        toast.error('No se creó la nómina');
-        return;
-      }
-
-      const id = String(primeraNomina.id);
-      setNominaId(id);
-
-      toast.success('Nómina creada');
-
-      await cargarDatos();
-      await cargarDetalles(id);
-    } catch {
-      toast.error('Error al crear nómina');
-    } finally {
-      setLoading(false);
-    }
-  };
+    await cargarDatos();
+    await cargarDetalles(nominaSeleccionada);
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al crear nómina');
+  } finally {
+    setLoading(false);
+  }
+};
 
 const agregarDetalle = async () => {
   if (!nominaId || isNaN(Number(nominaId))) {
@@ -288,6 +320,29 @@ const agregarDetalle = async () => {
     };
   }, [detalles]);
 
+
+  const agregarTodosEmpleados = async () => {
+  if (!nominaId) {
+    toast.error('Selecciona una nómina');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await api.post(`/nomina/${nominaId}/agregar-todos`);
+
+    toast.success(`Se agregaron ${res.data.total_agregados} empleados`);
+
+    await cargarDetalles(nominaId);
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al agregar empleados');
+  } finally {
+    setLoading(false);
+  }
+};
+
   return {
     empleados,
     nominas,
@@ -306,6 +361,10 @@ const agregarDetalle = async () => {
     setFechaInicio,
     fechaFin,
     setFechaFin,
+    setMesInicio,
+    mesInicio,
+    setMesFin,
+    mesFin,
 
     horasTrabajadas,
     setHorasTrabajadas,
@@ -334,5 +393,6 @@ const agregarDetalle = async () => {
     generarPdf,
     generarPdfEmpleado,
     eliminarEmpleadoDeNomina,
+    agregarTodosEmpleados,
   };
 }
