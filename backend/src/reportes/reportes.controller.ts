@@ -1,52 +1,37 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ReportesService } from './reportes.service';
+import { FiltroReporteNominaDto } from './dto/filtro-reporte-nomina.dto';
 
-class ReporteNominaDto {
-  empleadoId: number;
-  nombres: string;
-  apellidos: string;
-  salarioBase: number;
-  horasExtra: number;
-  bonificaciones: number;
-  deducciones: number;
-  totalPagar: number;
-  periodo: string;
-}
-
-class ReporteExpedienteDto {
-  empleadoId: number;
-  nombres: string;
-  apellidos: string;
-  estado: string;
-  documentosFaltantes: string[];
-}
-
+@ApiTags('Reportes')
 @Controller('reportes')
 export class ReportesController {
-  constructor(private reportesService: ReportesService) {}
-
-  @Post('nomina')
-  agregarReporteNomina(@Body() dto: ReporteNominaDto) {
-    return this.reportesService.agregarReporteNomina(dto);
-  }
+  constructor(private readonly reportesService: ReportesService) {}
 
   @Get('nomina')
-  obtenerReportesNomina(@Query('periodo') periodo?: string) {
-    return this.reportesService.obtenerReportesNomina(periodo);
+  @ApiQuery({ name: 'periodo', required: false, example: '2026-04' })
+  obtenerReportesNomina(@Query() query: FiltroReporteNominaDto) {
+    return this.reportesService.obtenerReportesNomina(query.periodo);
   }
 
   @Get('nomina/resumen')
+  @ApiQuery({ name: 'periodo', required: true, example: '2026-04' })
   generarResumenNomina(@Query('periodo') periodo: string) {
     return this.reportesService.generarResumenNomina(periodo);
-  }
-
-  @Post('expedientes')
-  agregarReporteExpediente(@Body() dto: ReporteExpedienteDto) {
-    return this.reportesService.agregarReporteExpediente(dto);
   }
 
   @Get('expedientes')
   obtenerReporteExpedientes() {
     return this.reportesService.obtenerReporteExpedientes();
+  }
+
+  @Get('academico')
+  obtenerReporteAcademico() {
+    return this.reportesService.obtenerReporteAcademico();
+  }
+
+  @Get('contratacion')
+  obtenerReporteContratacion() {
+    return this.reportesService.obtenerReporteContratacion();
   }
 }

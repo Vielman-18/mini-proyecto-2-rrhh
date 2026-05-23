@@ -1,64 +1,163 @@
 import { Injectable } from '@nestjs/common';
-
-export interface ReporteNomina {
-  empleadoId: number;
-  nombres: string;
-  apellidos: string;
-  salarioBase: number;
-  horasExtra: number;
-  bonificaciones: number;
-  deducciones: number;
-  totalPagar: number;
-  periodo: string;
-}
-
-export interface ReporteExpediente {
-  empleadoId: number;
-  nombres: string;
-  apellidos: string;
-  estado: string;
-  documentosFaltantes: string[];
-}
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ReportesService {
-  private nominaData: ReporteNomina[] = [];
-  private expedientesData: ReporteExpediente[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  agregarReporteNomina(data: ReporteNomina) {
-    this.nominaData.push(data);
-    return data;
+  async obtenerReportesNomina(periodo?: string) {
+    const detalles = await this.prisma.detalle_nomina.findMany({
+      where: periodo
+        ? {
+            nomina: {
+              periodo,
+            },
+          }
+        : {},
+      include: {
+        empleados: true,
+        nomina: true,
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    return detalles.map((detalle) => ({
+      empleadoId: detalle.empleado_id,
+      nombres: detalle.empleados.nombres,
+      apellidos: detalle.empleados.apellidos,
+      salarioBase: Number(detalle.salario_base),
+      horasExtra: Number(detalle.horas_extra || 0),
+      bonificaciones: Number(detalle.bonificaciones || 0),
+      deducciones: Number(detalle.deducciones || 0),
+      totalPagar: Number(detalle.salario_final),
+      periodo: detalle.nomina.periodo,
+      tipoPeriodo: detalle.nomina.tipo_periodo,
+      estadoNomina: detalle.nomina.estado,
+    }));
   }
 
-  obtenerReportesNomina(periodo?: string) {
-    if (periodo) {
-      return this.nominaData.filter(r => r.periodo === periodo);
-    }
-    return this.nominaData;
-  }
+  async generarResumenNomina(periodo: string) {
+    const reportes = await this.obtenerReportesNomina(periodo);
 
-  obtenerReporteExpedientes() {
-    return this.expedientesData;
-  }
-
-  agregarReporteExpediente(data: ReporteExpediente) {
-    this.expedientesData.push(data);
-    return data;
-  }
-
-  generarResumenNomina(periodo: string) {
-    const nominas = this.nominaData.filter(r => r.periodo === periodo);
-    const totalGeneral = nominas.reduce((acc, n) => acc + n.totalPagar, 0);
-    const totalDeducciones = nominas.reduce((acc, n) => acc + n.deducciones, 0);
-    const totalBonificaciones = nominas.reduce((acc, n) => acc + n.bonificaciones, 0);
+    const totalGeneral = reportes.reduce((acc, item) => acc + item.totalPagar, 0);
+    const totalDeducciones = reportes.reduce((acc, item) => acc + item.deducciones, 0);
+    const totalBonificaciones = reportes.reduce((acc, item) => acc + item.bonificaciones, 0);
 
     return {
       periodo,
-      totalEmpleados: nominas.length,
+      totalEmpleados: reportes.length,
       totalGeneral,
       totalDeducciones,
       totalBonificaciones,
-      detalle: nominas,
+      detalle: reportes,
     };
+  }
+
+  async obtenerReporteExpedientes() {
+    const empleados = await this.prisma.empleados.findMany({
+      include: {
+        documentos: true,
+        estado_expediente: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    const documentosObligatorios = [
+      'DPI',
+      'CONTRATO',
+      'ANTECEDENTES_PENALES',
+      'ANTECEDENTES_POLICIALES',
+      'CERTIFICADO_ESTUDIO',
+    ];
+
+    return empleados.map((empleado) => {
+      const documentosSubidos = empleado.documentos.map((doc) =>
+        doc.tipo_documento.toUpperCase(),
+      );
+
+      const documentosFaltantes = documentosObligatorios.filter(
+        (obligatorio) => !documentosSubidos.includes(obligatorio),
+      );
+
+      return {
+        empleadoId: empleado.id,
+        nombres: empleado.nombres,
+        apellidos: empleado.apellidos,
+        estado:
+          documentosFaltantes.length === 0
+            ? 'Completo'
+            : empleado.estado_expediente?.estado || 'Incompleto',
+        totalDocumentos: empleado.documentos.length,
+        documentosFaltantes,
+      };
+    });
+  }
+
+  async obtenerReporteAcademico() {
+    const empleados = await this.prisma.empleados.findMany({
+      include: {
+        registro_academico: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    return empleados.map((empleado) => ({
+      empleadoId: empleado.id,
+      nombres: empleado.nombres,
+      apellidos: empleado.apellidos,
+      totalRegistrosAcademicos: empleado.registro_academico.length,
+      registros: empleado.registro_academico.map((registro) => ({
+        titulo: registro.titulo,
+        institucion: registro.institucion,
+        fechaGraduacion: registro.fecha_graduacion,
+      })),
+    }));
+  }
+
+  async obtenerReporteContratacion() {
+    const empleados = await this.prisma.empleados.findMany({
+      include: {
+        documentos: true,
+        registro_academico: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    return empleados.map((empleado) => {
+      const tieneDpi = empleado.documentos.some(
+        (doc) => doc.tipo_documento.toUpperCase() === 'DPI',
+      );
+
+      const tieneContrato = empleado.documentos.some(
+        (doc) => doc.tipo_documento.toUpperCase() === 'CONTRATO',
+      );
+
+      const cumple =
+        !!empleado.dpi &&
+        !!empleado.nombres &&
+        !!empleado.apellidos &&
+        tieneDpi &&
+        tieneContrato;
+
+      return {
+        empleadoId: empleado.id,
+        nombres: empleado.nombres,
+        apellidos: empleado.apellidos,
+        dpi: empleado.dpi,
+        estadoLaboral: empleado.estado,
+        tieneDpi,
+        tieneContrato,
+        tieneRegistrosAcademicos: empleado.registro_academico.length > 0,
+        cumpleContratacion: cumple ? 'Cumple' : 'No cumple',
+      };
+    });
   }
 }

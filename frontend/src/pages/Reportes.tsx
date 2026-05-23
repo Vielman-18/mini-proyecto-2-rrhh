@@ -1,117 +1,308 @@
-import { useState, useEffect } from 'react';
-import { empleadosService } from '../services/api';
+import { useEffect, useState } from 'react';
+import api from '../api/axios';
+import toast from 'react-hot-toast';
+
+type Empleado = {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  estado: string;
+};
+
+type ReporteNomina = {
+  empleadoId: number;
+  nombres: string;
+  apellidos: string;
+  salarioBase: number;
+  horasExtra: number;
+  bonificaciones: number;
+  deducciones: number;
+  totalPagar: number;
+  periodo: string;
+  tipoPeriodo: string;
+  estadoNomina: string;
+};
+
+type ReporteExpediente = {
+  empleadoId: number;
+  nombres: string;
+  apellidos: string;
+  estado: string;
+  totalDocumentos: number;
+  documentosFaltantes: string[];
+};
+
+type ReporteAcademico = {
+  empleadoId: number;
+  nombres: string;
+  apellidos: string;
+  totalRegistrosAcademicos: number;
+};
+
+type ReporteContratacion = {
+  empleadoId: number;
+  nombres: string;
+  apellidos: string;
+  dpi: string;
+  estadoLaboral: string;
+  tieneDpi: boolean;
+  tieneContrato: boolean;
+  tieneRegistrosAcademicos: boolean;
+  cumpleContratacion: string;
+};
 
 export default function Reportes() {
-  const [empleados, setEmpleados] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
+  const [nomina, setNomina] = useState<ReporteNomina[]>([]);
+  const [expedientes, setExpedientes] = useState<ReporteExpediente[]>([]);
+  const [academico, setAcademico] = useState<ReporteAcademico[]>([]);
+  const [contratacion, setContratacion] = useState<ReporteContratacion[]>([]);
+  const [periodo, setPeriodo] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    empleadosService.listar().then(res => {
-      setEmpleados(res.data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    cargarReportes();
   }, []);
 
-  const totalSalarios = empleados.reduce((acc, e) => acc + Number(e.salario), 0);
-  const porDepartamento = empleados.reduce((acc: any, e) => {
-    acc[e.departamento] = (acc[e.departamento] || 0) + 1;
-    return acc;
-  }, {});
+  const cargarReportes = async () => {
+    try {
+      setLoading(true);
+
+      const [empleadosRes, nominaRes, expedientesRes, academicoRes, contratacionRes] =
+        await Promise.all([
+          api.get('/empleados'),
+          api.get('/reportes/nomina'),
+          api.get('/reportes/expedientes'),
+          api.get('/reportes/academico'),
+          api.get('/reportes/contratacion'),
+        ]);
+
+      setEmpleados(empleadosRes.data);
+      setNomina(nominaRes.data);
+      setExpedientes(expedientesRes.data);
+      setAcademico(academicoRes.data);
+      setContratacion(contratacionRes.data);
+    } catch {
+      toast.error('Error al cargar reportes');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtrarNomina = async () => {
+    try {
+      const res = await api.get('/reportes/nomina', {
+        params: periodo ? { periodo } : {},
+      });
+
+      setNomina(res.data);
+      toast.success('Reporte actualizado');
+    } catch {
+      toast.error('No se pudo filtrar la nómina');
+    }
+  };
+
+  const totalEmpleados = empleados.length;
+  const activos = empleados.filter((e) => e.estado === 'activo').length;
+  const retirados = empleados.filter((e) => e.estado === 'retirado').length;
+  const totalNomina = nomina.reduce((acc, item) => acc + Number(item.totalPagar || 0), 0);
+const expedientesCompletos = expedientes.filter(
+  (e) => e.totalDocumentos >= 5).length;
+  const cumplenContratacion = contratacion.filter(
+    (c) => c.cumpleContratacion === 'Cumple',
+  ).length;
 
   return (
-    <div>
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ color: '#f1f5f9', fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>Reportes del Sistema</h2>
-        <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>Resumen general de la organización</p>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '28px' }}>
-        {[
-          { label: 'Total Empleados', value: empleados.length, icon: '👥', color: '#3b82f6' },
-          { label: 'Masa Salarial Total', value: `Q${totalSalarios.toLocaleString()}`, icon: '💰', color: '#22c55e' },
-          { label: 'Departamentos', value: Object.keys(porDepartamento).length, icon: '🏢', color: '#a855f7' },
-        ].map((stat, i) => (
-          <div key={i} style={{
-            background: 'rgba(13,23,48,0.8)', border: '1px solid rgba(59,130,246,0.1)',
-            borderRadius: '16px', padding: '24px'
-          }}>
-            <div style={{ fontSize: '28px', marginBottom: '12px' }}>{stat.icon}</div>
-            <div style={{ color: stat.color, fontSize: '28px', fontWeight: 800, marginBottom: '4px' }}>
-              {loading ? '...' : stat.value}
-            </div>
-            <div style={{ color: '#64748b', fontSize: '13px' }}>{stat.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Por departamento */}
-      <div style={{
-        background: 'rgba(13,23,48,0.8)', border: '1px solid rgba(59,130,246,0.1)',
-        borderRadius: '16px', padding: '24px', marginBottom: '24px'
-      }}>
-        <h3 style={{ color: '#f1f5f9', fontSize: '16px', fontWeight: 600, margin: '0 0 20px' }}>
-          Empleados por Departamento
-        </h3>
-        {loading ? (
-          <p style={{ color: '#64748b' }}>Cargando...</p>
-        ) : (
-          Object.entries(porDepartamento).map(([dept, count]: any, i) => (
-            <div key={i} style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: '#94a3b8', fontSize: '13px' }}>{dept}</span>
-                <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: 600 }}>{count} empleados</span>
-              </div>
-              <div style={{ background: 'rgba(59,130,246,0.1)', borderRadius: '4px', height: '6px' }}>
-                <div style={{
-                  background: 'linear-gradient(90deg, #3b82f6, #1d4ed8)',
-                  height: '100%', borderRadius: '4px',
-                  width: `${(count / empleados.length) * 100}%`,
-                  transition: 'width 0.5s ease'
-                }} />
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Salarios por empleado */}
-      <div style={{
-        background: 'rgba(13,23,48,0.8)', border: '1px solid rgba(59,130,246,0.1)',
-        borderRadius: '16px', overflow: 'hidden'
-      }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(59,130,246,0.1)' }}>
-          <h3 style={{ color: '#f1f5f9', fontSize: '16px', fontWeight: 600, margin: 0 }}>
-            Reporte Salarial por Empleado
-          </h3>
+    <div className="min-h-screen space-y-8 bg-slate-950 p-6 text-white">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Reportes</h1>
+          <p className="text-slate-400">
+            Resumen general de empleados, nómina, expedientes y contratación
+          </p>
         </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'rgba(59,130,246,0.08)' }}>
-              {['Empleado', 'Cargo', 'Departamento', 'Salario', 'Estado'].map(h => (
-                <th key={h} style={{ padding: '12px 20px', textAlign: 'left', color: '#64748b', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {empleados.map((emp, i) => (
-              <tr key={i} style={{ borderTop: '1px solid rgba(59,130,246,0.05)' }}>
-                <td style={{ padding: '14px 20px', color: '#e2e8f0', fontSize: '13px', fontWeight: 500 }}>{emp.nombres} {emp.apellidos}</td>
-                <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: '13px' }}>{emp.cargo}</td>
-                <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: '13px' }}>{emp.departamento}</td>
-                <td style={{ padding: '14px 20px', color: '#60a5fa', fontSize: '13px', fontWeight: 600 }}>Q{Number(emp.salario).toLocaleString()}</td>
-                <td style={{ padding: '14px 20px' }}>
-                  <span style={{
-                    padding: '4px 12px', borderRadius: '20px', fontSize: '12px',
-                    background: 'rgba(34,197,94,0.1)', color: '#4ade80',
-                    border: '1px solid rgba(34,197,94,0.2)'
-                  }}>{emp.estado}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+        <button
+          onClick={cargarReportes}
+          disabled={loading}
+          className="rounded-xl border border-blue-500/30 bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+        >
+          {loading ? 'Cargando...' : 'Actualizar'}
+        </button>
       </div>
+
+      <section className="grid gap-5 md:grid-cols-3 xl:grid-cols-6">
+        <Card title="Empleados" value={totalEmpleados} icon="👥" />
+        <Card title="Activos" value={activos} icon="✅" />
+        <Card title="Retirados" value={retirados} icon="🚪" />
+        <Card title="Total Nómina" value={`Q${totalNomina.toLocaleString()}`} icon="💰" />
+        <Card title="Exp. completos" value={expedientesCompletos} icon="📁" />
+        <Card title="Cumplen" value={cumplenContratacion} icon="📋" />
+      </section>
+
+      <section className="rounded-2xl border border-blue-500/20 bg-slate-900 p-6">
+        <h2 className="mb-4 text-xl font-semibold">Filtro de nómina</h2>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <input
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            placeholder="Ejemplo: Mayo 2026"
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
+          />
+
+          <button
+            onClick={filtrarNomina}
+            className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
+          >
+            Filtrar
+          </button>
+
+          <button
+            onClick={() => {
+              setPeriodo('');
+              cargarReportes();
+            }}
+            className="rounded-xl border border-slate-700 px-5 py-3 font-semibold text-slate-300 hover:bg-slate-800"
+          >
+            Limpiar
+          </button>
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Reporte de nómina">
+          {nomina.length === 0 ? (
+            <Empty text="No hay datos de nómina." />
+          ) : (
+            <div className="space-y-3">
+              {nomina.slice(0, 8).map((item, index) => (
+                <div key={index} className="rounded-xl bg-slate-950 p-4">
+                  <div className="flex justify-between gap-4">
+                    <div>
+                      <p className="font-semibold">
+                        {item.nombres} {item.apellidos}
+                      </p>
+                      <p className="text-sm text-slate-400">
+                        {item.periodo} · {item.tipoPeriodo}
+                      </p>
+                    </div>
+
+                    <p className="font-bold text-green-400">
+                      Q{Number(item.totalPagar).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Reporte de expedientes">
+          {expedientes.length === 0 ? (
+            <Empty text="No hay datos de expedientes." />
+          ) : (
+            <div className="space-y-3">
+              {expedientes.slice(0, 8).map((item) => (
+                <div key={item.empleadoId} className="rounded-xl bg-slate-950 p-4">
+                  <div className="flex justify-between gap-4">
+                    <div>
+                      <p className="font-semibold">
+                        {item.nombres} {item.apellidos}
+                      </p>
+                      <p className="text-sm text-slate-400">
+                        Documentos: {item.totalDocumentos}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`h-fit rounded-full px-3 py-1 text-xs font-semibold ${
+                       item.totalDocumentos >= 5
+                      ? 'bg-green-500/10 text-green-400'
+                      : 'bg-red-500/10 text-red-400'
+                      }`}
+                    >
+                      {item.totalDocumentos >= 5 ? 'Completo' : 'Incompleto'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Reporte académico">
+          {academico.length === 0 ? (
+            <Empty text="No hay registros académicos." />
+          ) : (
+            <div className="space-y-3">
+              {academico.slice(0, 8).map((item) => (
+                <div key={item.empleadoId} className="flex justify-between rounded-xl bg-slate-950 p-4">
+                  <span>
+                    {item.nombres} {item.apellidos}
+                  </span>
+                  <span className="text-blue-400">
+                    {item.totalRegistrosAcademicos} registros
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Reporte de contratación">
+          {contratacion.length === 0 ? (
+            <Empty text="No hay datos de contratación." />
+          ) : (
+            <div className="space-y-3">
+              {contratacion.slice(0, 8).map((item) => (
+                <div key={item.empleadoId} className="rounded-xl bg-slate-950 p-4">
+                  <div className="flex justify-between gap-4">
+                    <div>
+                      <p className="font-semibold">
+                        {item.nombres} {item.apellidos}
+                      </p>
+                      <p className="text-sm text-slate-400">DPI: {item.dpi}</p>
+                    </div>
+                    <span
+                      className={`h-fit rounded-full px-3 py-1 text-xs font-semibold ${
+                        item.cumpleContratacion === 'Cumple'
+                          ? 'bg-green-500/10 text-green-400'
+                          : 'bg-amber-500/10 text-amber-400'
+                      }`}
+                    >
+                      {item.cumpleContratacion}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </section>
     </div>
   );
+}
+
+function Card({ title, value, icon }: { title: string; value: any; icon: string }) {
+  return (
+    <div className="rounded-2xl border border-blue-500/20 bg-slate-900 p-5 shadow-lg">
+      <div className="mb-3 text-3xl">{icon}</div>
+      <div className="text-2xl font-bold text-blue-400">{value}</div>
+      <p className="text-sm text-slate-500">{title}</p>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-blue-500/20 bg-slate-900 p-6 shadow-lg">
+      <h2 className="mb-4 text-xl font-semibold">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return <p className="text-slate-500">{text}</p>;
 }

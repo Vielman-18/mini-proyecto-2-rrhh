@@ -1,70 +1,97 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CrearEmpleadoDto } from './dto/crear-empleado.dto';
+import { ActualizarEmpleadoDto } from './dto/actualizar-empleado.dto';
+
+export enum EstadoLaboral {
+  ACTIVO = 'activo',
+  SUSPENDIDO = 'suspendido',
+  RETIRADO = 'retirado',
+}
 
 @Injectable()
 export class EmpleadosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async crear(data: any) {
-    const existe = await this.prisma.empleados.findUnique({
-      where: { dpi: data.dpi }
-    });
-    if (existe) throw new ConflictException('Ya existe un empleado con ese DPI');
-
+  async crear(dto: CrearEmpleadoDto) {
     return this.prisma.empleados.create({
       data: {
-        nombres: data.nombres,
-        apellidos: data.apellidos,
-        dpi: data.dpi,
-        fecha_nacimiento: data.fechaNacimiento ? new Date(data.fechaNacimiento) : null,
-        direccion: data.direccion,
-        telefono: data.telefono,
-        salario: data.salario,
-        cargo: data.cargo,
-        departamento: data.departamento,
-        estado: 'activo',
-      }
+        nombres: dto.nombres,
+        apellidos: dto.apellidos,
+        dpi: dto.dpi,
+        fecha_nacimiento: dto.fechaNacimiento
+          ? new Date(dto.fechaNacimiento)
+          : null,
+        direccion: dto.direccion,
+        telefono: dto.telefono,
+       email: dto.email, 
+       
+       salario: Number(dto.salario),
+       puesto_id: dto.puesto_id,
+        departamento_id: dto.departamento_id,
+        estado: EstadoLaboral.ACTIVO,
+      },
     });
   }
 
   async listar() {
     return this.prisma.empleados.findMany({
-      orderBy: { id: 'asc' }
+      orderBy: {
+        id: 'asc',
+      },
     });
   }
 
   async buscarPorId(id: number) {
     const empleado = await this.prisma.empleados.findUnique({
-      where: { id }
+      where: { id },
     });
-    if (!empleado) throw new NotFoundException('Empleado no encontrado');
+
+    if (!empleado) {
+      throw new NotFoundException('Empleado no encontrado');
+    }
+
     return empleado;
   }
 
-  async actualizar(id: number, data: any) {
+  async actualizar(id: number, dto: ActualizarEmpleadoDto) {
+    await this.buscarPorId(id);
+
     return this.prisma.empleados.update({
       where: { id },
       data: {
-        nombres: data.nombres,
-        apellidos: data.apellidos,
-        direccion: data.direccion,
-        telefono: data.telefono,
-        salario: data.salario,
-        cargo: data.cargo,
-        departamento: data.departamento,
-      }
+        nombres: dto.nombres,
+        apellidos: dto.apellidos,
+        dpi: dto.dpi,
+        fecha_nacimiento: dto.fechaNacimiento
+          ? new Date(dto.fechaNacimiento)
+          : undefined,
+        direccion: dto.direccion,
+        email: dto.email,
+        telefono: dto.telefono,
+        salario: dto.salario !== undefined ? Number(dto.salario) : undefined,
+        puesto_id: dto.puesto_id,
+        departamento_id: dto.departamento_id,
+      },
     });
   }
 
   async eliminar(id: number) {
-    await this.prisma.empleados.delete({ where: { id } });
-    return { message: 'Empleado eliminado correctamente' };
+    await this.buscarPorId(id);
+
+    return this.prisma.empleados.delete({
+      where: { id },
+    });
   }
 
-  async cambiarEstado(id: number, estado: string) {
+  async cambiarEstado(id: number, estado: EstadoLaboral) {
+    await this.buscarPorId(id);
+
     return this.prisma.empleados.update({
       where: { id },
-      data: { estado }
+      data: {
+        estado,
+      },
     });
   }
 }

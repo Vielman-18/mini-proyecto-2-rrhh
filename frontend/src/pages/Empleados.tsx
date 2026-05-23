@@ -1,180 +1,293 @@
-import { useState, useEffect } from 'react';
-import { empleadosService } from '../services/api';
+import { useEffect, useState } from 'react';
+import api from '../api/axios';
+import toast from 'react-hot-toast';
+
+type Empleado = {
+  id?: number;
+  nombres: string;
+  apellidos: string;
+  dpi: string;
+  fechaNacimiento: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  salario: string;
+  cargo: string;
+  departamento: string;
+  estado?: 'activo' | 'suspendido' | 'retirado';
+};
+
+type EmpleadoBackend = {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  dpi: string;
+  fecha_nacimiento: string | null;
+  direccion: string | null;
+  telefono: string | null;
+  email: string | null;
+  salario: number | string;
+  cargo: string | null;
+  departamento: string | null;
+  estado: 'activo' | 'suspendido' | 'retirado';
+};
+
+const empleadoInicial: Empleado = {
+  nombres: '',
+  apellidos: '',
+  dpi: '',
+  fechaNacimiento: '',
+  direccion: '',
+  telefono: '',
+  email: '',
+  salario: '',
+  cargo: '',
+  departamento: '',
+  estado: 'activo',
+};
 
 export default function Empleados() {
-  const [empleados, setEmpleados] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState('');
-  const [form, setForm] = useState({
-    nombres: '', apellidos: '', dpi: '', fechaNacimiento: '',
-    direccion: '', telefono: '', email: '', salario: '',
-    cargo: '', departamento: ''
-  });
-
-  useEffect(() => { cargarEmpleados(); }, []);
+  const [empleados, setEmpleados] = useState<EmpleadoBackend[]>([]);
+  const [form, setForm] = useState<Empleado>(empleadoInicial);
+  const [editando, setEditando] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const cargarEmpleados = async () => {
     try {
-      const res = await empleadosService.listar();
+      setLoading(true);
+      const res = await api.get('/empleados');
       setEmpleados(res.data);
-    } catch { console.error('Error'); }
-    finally { setLoading(false); }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await empleadosService.crear({ ...form, salario: Number(form.salario) });
-      setShowForm(false);
-      setForm({ nombres: '', apellidos: '', dpi: '', fechaNacimiento: '', direccion: '', telefono: '', email: '', salario: '', cargo: '', departamento: '' });
-      cargarEmpleados();
-    } catch { alert('Error al crear empleado'); }
-  };
-
-  const handleEliminar = async (id: number) => {
-    if (confirm('¿Estás seguro de eliminar este empleado?')) {
-      try {
-        await empleadosService.eliminar(id);
-        cargarEmpleados();
-      } catch { alert('Error al eliminar'); }
+    } catch (error: any) {
+      console.log(error.response?.data);
+      toast.error('Error al cargar empleados');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filtered = empleados.filter(e =>
-    `${e.nombres} ${e.apellidos} ${e.cargo} ${e.departamento}`.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    cargarEmpleados();
+  }, []);
 
-  const inputStyle = {
-    width: '100%', padding: '10px 14px', borderRadius: '8px',
-    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(59,130,246,0.2)',
-    color: '#f1f5f9', fontSize: '13px', outline: 'none', boxSizing: 'border-box' as const
+  const guardarEmpleado = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Validaciones
+    if (!form.nombres.trim()) { toast.error('El nombre es obligatorio'); return; }
+    if (!form.apellidos.trim()) { toast.error('Los apellidos son obligatorios'); return; }
+    if (!form.dpi.trim()) { toast.error('El DPI es obligatorio'); return; }
+    if (!/^\d+$/.test(form.dpi.trim())) { toast.error('El DPI solo debe contener números'); return; }
+    if (form.dpi.trim().length !== 13) { toast.error('El DPI debe tener exactamente 13 dígitos'); return; }
+    if (!form.fechaNacimiento) { toast.error('La fecha de nacimiento es obligatoria'); return; }
+    if (!form.direccion.trim()) { toast.error('La dirección es obligatoria'); return; }
+    if (!form.telefono.trim()) { toast.error('El teléfono es obligatorio'); return; }
+    if (!form.email.trim()) { toast.error('El email es obligatorio'); return; }
+    if (!form.salario) { toast.error('El salario es obligatorio'); return; }
+    if (!form.cargo.trim()) { toast.error('El cargo es obligatorio'); return; }
+    if (!form.departamento.trim()) { toast.error('El departamento es obligatorio'); return; }
+
+    const payload = {
+      nombres: form.nombres.trim(),
+      apellidos: form.apellidos.trim(),
+      dpi: form.dpi.trim(),
+      fechaNacimiento: form.fechaNacimiento || undefined,
+      direccion: form.direccion || undefined,
+      telefono: form.telefono || undefined,
+      email: form.email || undefined,
+      salario: Number(form.salario),
+      cargo: form.cargo || undefined,
+      departamento: form.departamento || undefined,
+    };
+
+    try {
+      if (editando !== null) {
+        await api.put(`/empleados/${editando}`, payload);
+        toast.success('Empleado actualizado');
+      } else {
+        await api.post('/empleados', payload);
+        toast.success('Empleado creado');
+      }
+
+      setForm(empleadoInicial);
+      setEditando(null);
+      cargarEmpleados();
+    } catch (error: any) {
+      console.log('ERROR BACKEND:', error.response?.data);
+      toast.error(
+        error.response?.data?.message?.[0] ||
+          error.response?.data?.message ||
+          'Error al guardar empleado',
+      );
+    }
+  };
+
+  const editarEmpleado = (emp: EmpleadoBackend) => {
+    setForm({
+      id: emp.id,
+      nombres: emp.nombres || '',
+      apellidos: emp.apellidos || '',
+      dpi: emp.dpi || '',
+      fechaNacimiento: emp.fecha_nacimiento ? emp.fecha_nacimiento.substring(0, 10) : '',
+      direccion: emp.direccion || '',
+      telefono: emp.telefono || '',
+      email: emp.email || '',
+      salario: String(emp.salario || ''),
+      cargo: emp.cargo || '',
+      departamento: emp.departamento || '',
+      estado: emp.estado || 'activo',
+    });
+    setEditando(emp.id);
+  };
+
+  const eliminarEmpleado = async (id: number) => {
+    if (!confirm('¿Seguro que deseas eliminar este empleado?')) return;
+    try {
+      await api.delete(`/empleados/${id}`);
+      toast.success('Empleado eliminado');
+      cargarEmpleados();
+    } catch (error: any) {
+      console.log(error.response?.data);
+      toast.error('No se pudo eliminar el empleado');
+    }
+  };
+
+  const cambiarEstado = async (id: number, estado: 'activo' | 'suspendido' | 'retirado') => {
+    try {
+      await api.put(`/empleados/${id}/estado`, { estado });
+      toast.success('Estado actualizado');
+      cargarEmpleados();
+    } catch (error: any) {
+      console.log(error.response?.data);
+      toast.error('No se pudo cambiar el estado');
+    }
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h2 style={{ color: '#f1f5f9', fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>Gestión de Empleados</h2>
-          <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>{empleados.length} empleados registrados</p>
-        </div>
-        <button onClick={() => setShowForm(!showForm)} style={{
-          padding: '10px 20px', borderRadius: '10px',
-          background: showForm ? 'rgba(239,68,68,0.1)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-          border: showForm ? '1px solid rgba(239,68,68,0.3)' : 'none',
-          color: showForm ? '#f87171' : '#fff',
-          cursor: 'pointer', fontSize: '14px', fontWeight: 600
-        }}>
-          {showForm ? '✕ Cancelar' : '+ Nuevo Empleado'}
-        </button>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-white">Gestión de Empleados</h1>
+        <p className="text-slate-400">Crear, editar, eliminar y cambiar estado de empleados</p>
       </div>
 
-      {/* Form */}
-      {showForm && (
-        <div style={{
-          background: 'rgba(13,23,48,0.9)', border: '1px solid rgba(59,130,246,0.2)',
-          borderRadius: '16px', padding: '28px', marginBottom: '24px'
-        }}>
-          <h3 style={{ color: '#f1f5f9', fontSize: '16px', fontWeight: 600, margin: '0 0 20px' }}>Nuevo Empleado</h3>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-              {[
-                { label: 'Nombres', key: 'nombres', type: 'text' },
-                { label: 'Apellidos', key: 'apellidos', type: 'text' },
-                { label: 'DPI', key: 'dpi', type: 'text' },
-                { label: 'Fecha de Nacimiento', key: 'fechaNacimiento', type: 'date' },
-                { label: 'Dirección', key: 'direccion', type: 'text' },
-                { label: 'Teléfono', key: 'telefono', type: 'text' },
-                { label: 'Email', key: 'email', type: 'email' },
-                { label: 'Salario (Q)', key: 'salario', type: 'number' },
-                { label: 'Cargo', key: 'cargo', type: 'text' },
-                { label: 'Departamento', key: 'departamento', type: 'text' },
-              ].map(({ label, key, type }) => (
-                <div key={key}>
-                  <label style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 500, display: 'block', marginBottom: '6px' }}>{label}</label>
-                  <input type={type} value={form[key as keyof typeof form]}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    style={inputStyle} required />
-                </div>
-              ))}
-            </div>
-            <button type="submit" style={{
-              padding: '12px 28px', borderRadius: '10px',
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-              border: 'none', color: '#fff', fontSize: '14px',
-              fontWeight: 600, cursor: 'pointer'
-            }}>
-              ✓ Guardar Empleado
+      <form
+        onSubmit={guardarEmpleado}
+        className="grid gap-4 rounded-2xl border border-blue-500/10 bg-slate-950/80 p-6 shadow-lg shadow-black/10 md:grid-cols-2"
+      >
+        {[
+          { name: 'nombres', label: 'Nombres *', type: 'text' },
+          { name: 'apellidos', label: 'Apellidos *', type: 'text' },
+          { name: 'dpi', label: 'DPI * (13 dígitos)', type: 'text' },
+          { name: 'fechaNacimiento', label: 'Fecha de nacimiento *', type: 'date' },
+          { name: 'direccion', label: 'Dirección *', type: 'text' },
+          { name: 'telefono', label: 'Teléfono *', type: 'text' },
+          { name: 'email', label: 'Email *', type: 'email' },
+          { name: 'salario', label: 'Salario *', type: 'number' },
+          { name: 'cargo', label: 'Cargo *', type: 'text' },
+          { name: 'departamento', label: 'Departamento *', type: 'text' },
+        ].map(({ name, label, type }) => (
+          <div key={name}>
+            <label className="mb-1 block text-sm font-medium text-slate-300">{label}</label>
+            <input
+              type={type}
+              value={form[name as keyof Empleado] || ''}
+              onChange={(e) => setForm({ ...form, [name]: e.target.value })}
+              maxLength={name === 'dpi' ? 13 : undefined}
+              className={`w-full rounded-xl border bg-slate-900 px-4 py-3 text-white outline-none transition focus:border-blue-500 ${
+                name === 'dpi' && form.dpi.length > 0 && form.dpi.length !== 13
+                  ? 'border-red-500'
+                  : 'border-slate-700'
+              }`}
+            />
+            {name === 'dpi' && form.dpi.length > 0 && form.dpi.length !== 13 && (
+              <p className="mt-1 text-xs text-red-400">
+                El DPI debe tener 13 dígitos ({form.dpi.length}/13)
+              </p>
+            )}
+          </div>
+        ))}
+
+        <div className="flex items-end gap-3 md:col-span-2">
+          <button
+            type="submit"
+            className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700"
+          >
+            {editando ? 'Actualizar empleado' : 'Crear empleado'}
+          </button>
+
+          {editando && (
+            <button
+              type="button"
+              onClick={() => { setEditando(null); setForm(empleadoInicial); }}
+              className="rounded-xl bg-slate-700 px-6 py-3 font-semibold text-white transition hover:bg-slate-600"
+            >
+              Cancelar
             </button>
-          </form>
+          )}
         </div>
-      )}
+      </form>
 
-      {/* Search */}
-      <div style={{ marginBottom: '20px' }}>
-        <input
-          type="text" placeholder="🔍 Buscar por nombre, cargo o departamento..."
-          value={search} onChange={(e) => setSearch(e.target.value)}
-          style={{ ...inputStyle, padding: '12px 16px', fontSize: '14px' }}
-        />
-      </div>
+      <div className="overflow-hidden rounded-2xl border border-blue-500/10 bg-slate-950/80 shadow-lg shadow-black/10">
+        <div className="flex items-center justify-between border-b border-blue-500/10 px-6 py-5">
+          <h2 className="text-xl font-semibold text-white">Lista de empleados</h2>
+          <span className="text-sm text-slate-400">{loading ? 'Cargando...' : `${empleados.length} registros`}</span>
+        </div>
 
-      {/* Table */}
-      <div style={{
-        background: 'rgba(13,23,48,0.8)', border: '1px solid rgba(59,130,246,0.1)',
-        borderRadius: '16px', overflow: 'hidden'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'rgba(59,130,246,0.08)' }}>
-              {['Empleado', 'DPI', 'Cargo', 'Departamento', 'Salario', 'Estado', 'Acciones'].map(h => (
-                <th key={h} style={{ padding: '14px 20px', textAlign: 'left', color: '#64748b', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Cargando empleados...</td></tr>
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No se encontraron empleados</td></tr>
-            ) : filtered.map((emp) => (
-              <tr key={emp.id} style={{ borderTop: '1px solid rgba(59,130,246,0.05)' }}>
-                <td style={{ padding: '14px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                      width: '36px', height: '36px', borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#fff', fontSize: '14px', fontWeight: 700, flexShrink: 0
-                    }}>{emp.nombres?.charAt(0)}</div>
-                    <div>
-                      <div style={{ color: '#e2e8f0', fontSize: '14px', fontWeight: 500 }}>{emp.nombres} {emp.apellidos}</div>
-                      <div style={{ color: '#64748b', fontSize: '12px' }}>{emp.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: '13px' }}>{emp.dpi}</td>
-                <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: '13px' }}>{emp.cargo}</td>
-                <td style={{ padding: '14px 20px', color: '#94a3b8', fontSize: '13px' }}>{emp.departamento}</td>
-                <td style={{ padding: '14px 20px', color: '#60a5fa', fontSize: '13px', fontWeight: 600 }}>Q{Number(emp.salario).toLocaleString()}</td>
-                <td style={{ padding: '14px 20px' }}>
-                  <span style={{
-                    padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 500,
-                    background: 'rgba(34,197,94,0.1)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.2)'
-                  }}>{emp.estado}</span>
-                </td>
-                <td style={{ padding: '14px 20px' }}>
-                  <button onClick={() => handleEliminar(emp.id)} style={{
-                    padding: '6px 14px', borderRadius: '8px',
-                    background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-                    color: '#f87171', cursor: 'pointer', fontSize: '12px', fontWeight: 500
-                  }}>Eliminar</button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-blue-500/5">
+                {['Empleado', 'DPI', 'Contacto', 'Cargo', 'Departamento', 'Salario', 'Estado', 'Acciones'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {empleados.map(emp => (
+                <tr key={emp.id} className="border-t border-blue-500/5 transition hover:bg-blue-500/5">
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-white">{emp.nombres} {emp.apellidos}</p>
+                    <p className="text-xs text-slate-500">{emp.fecha_nacimiento ? emp.fecha_nacimiento.substring(0, 10) : 'Sin fecha'}</p>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-slate-400">{emp.dpi}</td>
+                  <td className="px-4 py-4">
+                    <p className="text-sm text-slate-400">{emp.telefono || 'Sin teléfono'}</p>
+                    <p className="text-xs text-slate-500">{emp.email || 'Sin email'}</p>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-slate-400">{emp.cargo || 'Sin cargo'}</td>
+                  <td className="px-4 py-4 text-sm text-slate-400">{emp.departamento || 'Sin departamento'}</td>
+                  <td className="px-4 py-4 text-sm font-semibold text-blue-400">Q{Number(emp.salario || 0).toLocaleString()}</td>
+                  <td className="px-4 py-4">
+                    <select
+                      value={emp.estado || 'activo'}
+                      onChange={e => cambiarEstado(emp.id, e.target.value as 'activo' | 'suspendido' | 'retirado')}
+                      className={`rounded-xl border px-3 py-2 text-xs font-semibold outline-none ${
+                        emp.estado === 'retirado' ? 'border-red-500/20 bg-red-500/10 text-red-400'
+                        : emp.estado === 'suspendido' ? 'border-amber-500/20 bg-amber-500/10 text-amber-400'
+                        : 'border-green-500/20 bg-green-500/10 text-green-400'
+                      }`}
+                    >
+                      <option value="activo">Activo</option>
+                      <option value="suspendido">Suspendido</option>
+                      <option value="retirado">Retirado</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => editarEmpleado(emp)} className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs font-semibold text-amber-400 transition hover:bg-amber-500/20">Editar</button>
+                      <button type="button" onClick={() => eliminarEmpleado(emp.id)} className="rounded-lg bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-500/20">Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!loading && empleados.length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">No hay empleados registrados.</td></tr>
+              )}
+              {loading && (
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">Cargando empleados...</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

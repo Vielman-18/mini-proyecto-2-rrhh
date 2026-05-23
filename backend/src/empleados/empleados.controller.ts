@@ -1,26 +1,21 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
-import { EmpleadosService, EstadoLaboral } from './empleados.service';
-
-class CrearEmpleadoDto {
-  nombres: string;
-  apellidos: string;
-  fechaNacimiento: string;
-  direccion: string;
-  telefono: string;
-  email: string;
-  dpi: string;
-  salario: number;
-  cargo: string;
-  departamento: string;
-}
-
-class CambiarEstadoDto {
-  estado: EstadoLaboral;
-}
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+} from '@nestjs/common';
+import { EmpleadosService } from './empleados.service';
+import { CrearEmpleadoDto } from './dto/crear-empleado.dto';
+import { ActualizarEmpleadoDto } from './dto/actualizar-empleado.dto';
+import { CambiarEstadoDto } from './dto/cambiar-estado.dto';
 
 @Controller('empleados')
 export class EmpleadosController {
-  constructor(private empleadosService: EmpleadosService) {}
+  constructor(private readonly empleadosService: EmpleadosService) {}
 
   @Post()
   crear(@Body() dto: CrearEmpleadoDto) {
@@ -38,7 +33,10 @@ export class EmpleadosController {
   }
 
   @Put(':id')
-  actualizar(@Param('id', ParseIntPipe) id: number, @Body() dto: Partial<CrearEmpleadoDto>) {
+  actualizar(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ActualizarEmpleadoDto,
+  ) {
     return this.empleadosService.actualizar(id, dto);
   }
 
@@ -48,7 +46,10 @@ export class EmpleadosController {
   }
 
   @Put(':id/estado')
-  cambiarEstado(@Param('id', ParseIntPipe) id: number, @Body() dto: CambiarEstadoDto) {
+  cambiarEstado(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CambiarEstadoDto,
+  ) {
     return this.empleadosService.cambiarEstado(id, dto.estado);
   }
 }

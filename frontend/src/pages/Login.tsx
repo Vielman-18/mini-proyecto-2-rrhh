@@ -1,187 +1,194 @@
 import { useState } from 'react';
-import { authService } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import api from '../api/axios';
 
-interface Props {
-  onLogin: (email: string) => void;
-}
+export default function Login() {
+  const navigate = useNavigate();
 
-export default function Login({ onLogin }: Props) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [correo, setCorreo] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const [rol, setRol] = useState('rrhh');
+  const [cargando, setCargando] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const iniciarSesion = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+
     try {
-      const res = await authService.login(email, password);
-      localStorage.setItem('token', res.data.access_token);
-      localStorage.setItem('role', res.data.role);
-      localStorage.setItem('email', email);
-      onLogin(email);
+      setCargando(true);
+
+      const res = await api.post('/auth/login', {
+        correo,
+        contrasena,
+        rol,
+      });
+
+      const token = res.data.access_token || res.data.token;
+      const rolUsuario = (res.data.rol || rol).toLowerCase();
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('role', rolUsuario);
+      localStorage.setItem('correo', correo);
+
+      toast.success('Inicio de sesión correcto');
+
+      navigate('/home');
     } catch {
-      setError('Credenciales incorrectas. Verifica tu email y contraseña.');
+      toast.error('Credenciales incorrectas o rol incorrecto');
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
-  return (
-    <div style={{
-      minHeight: '100vh', display: 'flex',
-      background: 'linear-gradient(135deg, #0a0f1e 0%, #0d1730 50%, #0a1628 100%)',
-      fontFamily: "'DM Sans', sans-serif",
-      position: 'relative', overflow: 'hidden'
-    }}>
-      {/* Background effects */}
-      <div style={{
-        position: 'absolute', top: '-200px', left: '-200px',
-        width: '600px', height: '600px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)',
-        pointerEvents: 'none'
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-200px', right: '-200px',
-        width: '600px', height: '600px', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(29,78,216,0.08) 0%, transparent 70%)',
-        pointerEvents: 'none'
-      }} />
+return (
+  <div className="relative min-h-screen overflow-hidden bg-[#020617] text-white">
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.25),transparent_28%),radial-gradient(circle_at_85%_80%,rgba(99,102,241,0.28),transparent_30%)]" />
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(34,211,238,0.07)_1px,transparent_1px),linear-gradient(to_bottom,rgba(34,211,238,0.07)_1px,transparent_1px)] bg-[size:58px_58px]" />
 
-      {/* Left panel */}
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', padding: '60px',
-        borderRight: '1px solid rgba(59,130,246,0.1)',
-      }}>
-        <div style={{ maxWidth: '480px' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '10px',
-            background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)',
-            borderRadius: '20px', padding: '6px 16px', marginBottom: '40px'
-          }}>
-            <span style={{ color: '#60a5fa', fontSize: '13px', fontWeight: 500 }}>⚡ Sistema Empresarial</span>
-          </div>
+    <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="grid w-full max-w-6xl grid-cols-1 overflow-hidden rounded-[2.2rem] border border-cyan-400/20 bg-slate-950/75 shadow-2xl shadow-cyan-950/50 backdrop-blur-2xl lg:grid-cols-[1.15fr_0.85fr]">
+        
+        <section className="relative hidden min-h-[650px] overflow-hidden p-14 lg:block">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_30%,rgba(34,211,238,0.16),transparent_35%)]" />
 
-          <h1 style={{
-            color: '#f1f5f9', fontSize: '52px', fontWeight: 800,
-            lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-1px'
-          }}>
-            Gestión de<br />
-            <span style={{ color: '#3b82f6' }}>RRHH</span> y Nómina
-          </h1>
+          <div className="relative z-10 flex h-full flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-5">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-cyan-300/40 bg-cyan-400/10 shadow-xl shadow-cyan-500/20">
+                  <span className="text-3xl font-black text-cyan-300">UMG</span>
+                </div>
 
-          <p style={{ color: '#64748b', fontSize: '17px', lineHeight: 1.6, margin: '0 0 48px' }}>
-            Plataforma integral para la administración de recursos humanos, nómina y expedientes empresariales.
-          </p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {[
-              { icon: '👥', text: 'Gestión completa de empleados' },
-              { icon: '💰', text: 'Procesamiento de nómina automatizado' },
-              { icon: '📁', text: 'Expedientes digitales seguros' },
-              { icon: '📊', text: 'Reportes y analíticas en tiempo real' },
-            ].map((item, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '8px',
-                  background: 'rgba(59,130,246,0.1)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0
-                }}>{item.icon}</div>
-                <span style={{ color: '#94a3b8', fontSize: '14px' }}>{item.text}</span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.45em] text-cyan-300">
+                    Universidad Mariano Gálvez
+                  </p>
+                  <p className="mt-2 text-sm text-slate-400">
+                    Sistema de Recursos Humanos
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* Right panel - Login form */}
-      <div style={{
-        width: '480px', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', padding: '40px'
-      }}>
-        <div style={{
-          width: '100%', background: 'rgba(13,23,48,0.8)',
-          border: '1px solid rgba(59,130,246,0.15)',
-          borderRadius: '20px', padding: '40px',
-          backdropFilter: 'blur(20px)'
-        }}>
-          <div style={{ marginBottom: '32px' }}>
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '12px',
-              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '22px', marginBottom: '20px'
-            }}>⚡</div>
-            <h2 style={{ color: '#f1f5f9', fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>
-              Iniciar Sesión
-            </h2>
-            <p style={{ color: '#64748b', fontSize: '14px', margin: 0 }}>
-              Ingresa tus credenciales para continuar
+              <div className="mt-24 max-w-2xl">
+                <h1 className="text-6xl font-black leading-none tracking-tight">
+                  Bienvenido al
+                  <span className="mt-3 block bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+                    Portal RRHH
+                  </span>
+                </h1>
+
+                <p className="mt-8 max-w-lg text-base leading-8 text-slate-300">
+                  Accede a tu cuenta para continuar con la gestión del sistema.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-5">
+              <div className="rounded-3xl border border-cyan-400/15 bg-white/[0.04] p-5">
+                <p className="text-2xl font-black text-cyan-300">RRHH</p>
+                <p className="mt-2 text-xs text-slate-400">Gestión</p>
+              </div>
+
+              <div className="rounded-3xl border border-blue-400/15 bg-white/[0.04] p-5">
+                <p className="text-2xl font-black text-blue-300">Admin</p>
+                <p className="mt-2 text-xs text-slate-400">Control</p>
+              </div>
+
+              <div className="rounded-3xl border border-violet-400/15 bg-white/[0.04] p-5">
+                <p className="text-2xl font-black text-violet-300">User</p>
+                <p className="mt-2 text-xs text-slate-400">Acceso</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="relative flex items-center justify-center p-8 sm:p-12">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900/70 via-slate-950 to-black" />
+
+          <div className="relative w-full max-w-md">
+            <div className="mb-10 text-center">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/10 shadow-lg shadow-cyan-500/20 lg:hidden">
+                <span className="text-xl font-black text-cyan-300">UMG</span>
+              </div>
+
+              <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
+                UMG RRHH
+              </p>
+
+              <h2 className="text-4xl font-black tracking-tight text-white">
+                Iniciar sesión
+              </h2>
+
+              <p className="mt-4 text-sm text-slate-400">
+                Ingresa tus datos para continuar.
+              </p>
+            </div>
+
+            <form
+              onSubmit={iniciarSesion}
+              className="space-y-6 rounded-[2rem] border border-cyan-400/20 bg-slate-950/80 p-8 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl"
+            >
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">
+                  Correo
+                </label>
+                <input
+                  type="email"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-700/80 bg-black/40 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:bg-slate-950"
+                  placeholder="correo@ejemplo.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">
+                  Contraseña
+                </label>
+                <input
+                  type="password"
+                  value={contrasena}
+                  onChange={(e) => setContrasena(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-700/80 bg-black/40 px-4 py-3.5 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:bg-slate-950"
+                  placeholder="********"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">
+                  Rol
+                </label>
+                <select
+                  value={rol}
+                  onChange={(e) => setRol(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-700/80 bg-black/40 px-4 py-3.5 text-white outline-none transition focus:border-cyan-400 focus:bg-slate-950"
+                >
+                  <option value="rrhh">RRHH</option>
+                  <option value="admin">Admin</option>
+                  <option value="empleado">Empleado</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                disabled={cargando}
+                className="group relative w-full overflow-hidden rounded-2xl border border-cyan-300/30 bg-cyan-400 px-5 py-4 font-black text-slate-950 shadow-xl shadow-cyan-500/25 transition hover:-translate-y-0.5 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition duration-700 group-hover:translate-x-full" />
+                <span className="relative">
+                  {cargando ? 'Ingresando...' : 'Iniciar sesión'}
+                </span>
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-xs text-slate-500">
+              Universidad Mariano Gálvez de Guatemala
             </p>
           </div>
-
-          {error && (
-            <div style={{
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
-              borderRadius: '10px', padding: '12px 16px', marginBottom: '24px',
-              color: '#f87171', fontSize: '14px'
-            }}>
-              ⚠️ {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
-                Correo electrónico
-              </label>
-              <input
-                type="email" value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="correo@empresa.com"
-                required
-                style={{
-                  width: '100%', padding: '12px 16px', borderRadius: '10px',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(59,130,246,0.2)',
-                  color: '#f1f5f9', fontSize: '14px', outline: 'none', boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '28px' }}>
-              <label style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 500, display: 'block', marginBottom: '8px' }}>
-                Contraseña
-              </label>
-              <input
-                type="password" value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                style={{
-                  width: '100%', padding: '12px 16px', borderRadius: '10px',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(59,130,246,0.2)',
-                  color: '#f1f5f9', fontSize: '14px', outline: 'none', boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <button
-              type="submit" disabled={loading}
-              style={{
-                width: '100%', padding: '14px',
-                background: loading ? 'rgba(59,130,246,0.5)' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                border: 'none', borderRadius: '10px', color: '#fff',
-                fontSize: '15px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {loading ? '⏳ Iniciando sesión...' : '→ Iniciar Sesión'}
-            </button>
-          </form>
-        </div>
+        </section>
       </div>
     </div>
-  );
+  </div>
+);
 }

@@ -1,46 +1,119 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+   Injectable,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-
-export enum Role {
-  ADMIN = 'admin',
-  RRHH = 'rrhh',
-  EMPLEADO = 'empleado',
-}
-
-interface User {
-  id: number;
-  email: string;
-  password: string;
-  role: Role;
-}
+import { RegisterDto } from './dto/registro.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
-  private users: User[] = [];
-  private idCounter = 1;
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
 
-  constructor(private jwtService: JwtService) {}
+  async retirarAcceso(empleadoId: number) {
+  const empleado = await this.prisma.empleados.findUnique({
+    where: { id: empleadoId },
+  });
 
-  async register(email: string, password: string, role: Role = Role.EMPLEADO) {
-    const exists = this.users.find(u => u.email === email);
-    if (exists) throw new ConflictException('El usuario ya existe');
-    const hashed = await bcrypt.hash(password, 10);
-    const user: User = { id: this.idCounter++, email, password: hashed, role };
-    this.users.push(user);
-    return { message: 'Usuario registrado correctamente', userId: user.id };
+  if (!empleado || !empleado.usuario_id) {
+    throw new NotFoundException('Este empleado no tiene acceso activo');
   }
 
-  async login(email: string, password: string) {
-    const user = this.users.find(u => u.email === email);
-    if (!user) throw new UnauthorizedException('Credenciales incorrectas');
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) throw new UnauthorizedException('Credenciales incorrectas');
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    return { access_token: this.jwtService.sign(payload), role: user.role };
+  await this.prisma.$transaction([
+    this.prisma.empleados.update({
+      where: { id: empleadoId },
+      data: {
+        usuario_id: null,
+      },
+    }),
+
+    this.prisma.usuarios.delete({
+      where: {
+        id: empleado.usuario_id,
+      },
+    }),
+  ]);
+
+  return {
+    message: 'Acceso retirado correctamente',
+  };
+}
+
+  async register(dto: RegisterDto) {
+    const exists = await this.prisma.usuarios.findUnique({
+      where: { correo: dto.correo },
+    });
+
+    if (exists) {
+      throw new ConflictException('El usuario ya existe');
+    }
+
+    const hashed = await bcrypt.hash(dto.contrasena, 10);
+
+    const user = await this.prisma.usuarios.create({
+      data: {
+        nombre: dto.nombre,
+        correo: dto.correo,
+        contrasena: hashed,
+        rol: dto.rol,
+      },
+    });
+
+    return {
+      message: 'Usuario registrado correctamente',
+      userId: user.id,
+      rol: user.rol,
+    };
   }
 
-  findById(id: number) {
-    return this.users.find(u => u.id === id);
+  async vincularUsuario(
+    id: number,
+    body: { usuarioId: number; correo: string },
+  ) {
+    return this.prisma.empleados.update({
+      where: { id },
+      data: {
+        usuario_id: Number(body.usuarioId),
+        email: body.correo,
+      },
+    });
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.prisma.usuarios.findUnique({
+      where: { correo: dto.correo },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    const valid = await bcrypt.compare(dto.contrasena, user.contrasena);
+
+    if (!valid) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    if (user.rol.toLowerCase() !== dto.rol.toLowerCase()) {
+      throw new UnauthorizedException('El rol no corresponde al usuario');
+    }
+
+    const payload = {
+      sub: user.id,
+      correo: user.correo,
+      rol: user.rol,
+    };
+
+    return {
+      token: this.jwtService.sign(payload),
+      rol: user.rol,
+    };
   }
 }

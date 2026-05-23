@@ -1,16 +1,49 @@
-
 CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     correo VARCHAR(150) NOT NULL UNIQUE,
     contrasena VARCHAR(255) NOT NULL,
-    rol VARCHAR(20) NOT NULL CHECK (rol IN ('admin', 'rrhh', 'empleado')),
+    rol VARCHAR(20) NOT NULL 
+        CHECK (rol IN ('admin', 'rrhh', 'empleado')),
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE departamentos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL UNIQUE,
+    descripcion TEXT,
+    estado VARCHAR(20) NOT NULL DEFAULT 'activo'
+        CHECK (estado IN ('activo', 'inactivo')),
+    creado_por INT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_departamento_usuario
+        FOREIGN KEY (creado_por) REFERENCES usuarios(id)
+        ON DELETE RESTRICT
+);
+CREATE TABLE puestos (
+    id SERIAL PRIMARY KEY,
+    departamento_id INT NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    salario_base NUMERIC(10,2),
+    estado VARCHAR(20) NOT NULL DEFAULT 'activo'
+        CHECK (estado IN ('activo', 'inactivo')),
+    creado_por INT NOT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_puesto_departamento
+        FOREIGN KEY (departamento_id) REFERENCES departamentos(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_puesto_usuario
+        FOREIGN KEY (creado_por) REFERENCES usuarios(id)
+        ON DELETE RESTRICT
 );
 
 CREATE TABLE empleados (
     id SERIAL PRIMARY KEY,
     usuario_id INT UNIQUE,
+    departamento_id INT,
+    puesto_id INT,
+    email VARCHAR(150) NOT NULL UNIQUE, 
     nombres VARCHAR(100) NOT NULL,
     apellidos VARCHAR(100) NOT NULL,
     dpi VARCHAR(20) NOT NULL UNIQUE,
@@ -18,13 +51,17 @@ CREATE TABLE empleados (
     direccion TEXT,
     telefono VARCHAR(20),
     salario NUMERIC(10,2) NOT NULL,
-    cargo VARCHAR(100),
-    departamento VARCHAR(100),
     estado VARCHAR(20) NOT NULL DEFAULT 'activo'
         CHECK (estado IN ('activo', 'suspendido', 'retirado')),
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_empleado_usuario
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_empleado_departamento
+        FOREIGN KEY (departamento_id) REFERENCES departamentos(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_empleado_puesto
+        FOREIGN KEY (puesto_id) REFERENCES puestos(id)
         ON DELETE SET NULL
 );
 
@@ -124,6 +161,7 @@ CREATE TABLE ajustes_nomina (
     CONSTRAINT fk_ajuste_detalle_nomina
         FOREIGN KEY (detalle_nomina_id) REFERENCES detalle_nomina(id)
         ON DELETE CASCADE,
+
     CONSTRAINT fk_ajuste_usuario
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         ON DELETE RESTRICT
