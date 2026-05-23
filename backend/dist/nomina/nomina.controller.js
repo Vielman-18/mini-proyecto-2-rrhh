@@ -17,16 +17,29 @@ const common_1 = require("@nestjs/common");
 const crear_detalle_nomina_dto_1 = require("./dto/crear-detalle-nomina.dto");
 const nomina_service_1 = require("./nomina.service");
 const crear_nomina_dto_1 = require("./dto/crear-nomina.dto");
+const cambiar_estado_dto_1 = require("./dto/cambiar-estado.dto");
 let NominaController = class NominaController {
     nominaService;
     constructor(nominaService) {
         this.nominaService = nominaService;
     }
+    async agregarTodosEmpleadosANomina(id) {
+        return this.nominaService.agregarTodosEmpleadosANomina(Number(id));
+    }
     CrearDetalleNomina(dto) {
         return this.nominaService.crearDetalleNomina(dto);
     }
+    async cambiarEstado(id, dto) {
+        return this.nominaService.cambiarEstado(Number(id), dto.estado);
+    }
+    async generarBoletaEmpleado(id, res) {
+        return this.nominaService.generarBoletaEmpleado(Number(id), res);
+    }
     listarDetallePorNomina(id) {
         return this.nominaService.listarDetallePorNomina(Number(id));
+    }
+    async eliminarNomina(id) {
+        await this.nominaService.eliminarNomina(Number(id));
     }
     crear(dto) {
         return this.nominaService.crearNomina(dto);
@@ -37,8 +50,18 @@ let NominaController = class NominaController {
     listar() {
         return this.nominaService.listarNominas();
     }
+    eliminarEmpleadoDeNomina(nominaId, empleadoId) {
+        return this.nominaService.eliminarEmpleadoDeNomina(Number(nominaId), Number(empleadoId));
+    }
 };
 exports.NominaController = NominaController;
+__decorate([
+    (0, common_1.Post)(':id/agregar-todos'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "agregarTodosEmpleadosANomina", null);
 __decorate([
     (0, common_1.Post)('detalle'),
     __param(0, (0, common_1.Body)()),
@@ -47,12 +70,35 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "CrearDetalleNomina", null);
 __decorate([
+    (0, common_1.Put)(':id/estado'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, cambiar_estado_dto_1.CambiarEstadoDto]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "cambiarEstado", null);
+__decorate([
+    (0, common_1.Get)('detalle/:id/pdf'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "generarBoletaEmpleado", null);
+__decorate([
     (0, common_1.Get)(':id/detalle'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "listarDetallePorNomina", null);
+__decorate([
+    (0, common_1.Delete)(':id/delete'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "eliminarNomina", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
@@ -74,6 +120,14 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "listar", null);
+__decorate([
+    (0, common_1.Delete)(':nominaId/empleado/:empleadoId'),
+    __param(0, (0, common_1.Param)('nominaId')),
+    __param(1, (0, common_1.Param)('empleadoId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], NominaController.prototype, "eliminarEmpleadoDeNomina", null);
 exports.NominaController = NominaController = __decorate([
     (0, common_1.Controller)('nomina'),
     __metadata("design:paramtypes", [nomina_service_1.NominaService])

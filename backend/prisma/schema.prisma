@@ -132,7 +132,6 @@ model puestos {
   departamento_id Int
   nombre          String        @db.VarChar(100)
   descripcion     String?
-  salario_base    Decimal?      @db.Decimal(10, 2)
   estado          String?       @default("activo") @db.VarChar(20)
   creado_por      Int
   fecha_creacion  DateTime?     @default(now()) @db.Timestamp(6)
