@@ -7,73 +7,156 @@ const inputS =
 export function ModalPeriodo({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  const meses = [
+    'enero','febrero','marzo','abril','mayo','junio',
+    'julio','agosto','septiembre','octubre','noviembre','diciembre'
+  ];
+
+  const mesesFiltrados = meses.filter((_, index) => index >= currentMonth);
+
+  const años = Array.from({ length: 5 }, (_, i) =>
+    String(currentYear + i)
+  );
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6">
-      <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-8">
-        <h2 className="text-2xl font-black mb-6">Crear Nómina</h2>
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">
-              Tipo de Período
-            </label>
+      <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl">
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => h.setTipoPeriodo('mensual')}
-                className={`flex-1 py-3 rounded-xl font-black transition ${
-                  h.tipoPeriodo === 'mensual'
-                    ? 'bg-cyan-400 text-black'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                Mensual
-              </button>
+        {/* HEADER */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-black text-white">
+            Crear Nómina
+          </h2>
+          <p className="text-slate-400 text-sm">
+            Selecciona el periodo de cálculo
+          </p>
+        </div>
 
-              <button
-                onClick={() => h.setTipoPeriodo('quincenal')}
-                className={`flex-1 py-3 rounded-xl font-black transition ${
-                  h.tipoPeriodo === 'quincenal'
-                    ? 'bg-cyan-400 text-black'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
-              >
-                Quincenal
-              </button>
-            </div>
-          </div>
-
-         <input
-  type="month"
-  className={inputS}
-  value={h.mesInicio}
-  onChange={(e) => h.setMesInicio(e.target.value)}
-/>
-
-<input
-  type="month"
-  className={inputS}
-  value={h.mesFin}
-  onChange={(e) => h.setMesFin(e.target.value)}
-/>
-
+        {/* TIPO PERIODO */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
           <button
-            onClick={() => {
-              h.crearNomina();
-              onClose();
-            }}
-            className="w-full py-3 bg-cyan-400 text-black font-black rounded-xl"
+            onClick={() => h.setTipoPeriodo('mensual')}
+            className={`py-3 rounded-xl font-black transition ${
+              h.tipoPeriodo === 'mensual'
+                ? 'bg-cyan-400 text-black'
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
           >
-            CREAR
+            Mensual
           </button>
 
           <button
-            onClick={onClose}
-            className="text-xs text-slate-400 w-full"
+            onClick={() => h.setTipoPeriodo('quincenal')}
+            className={`py-3 rounded-xl font-black transition ${
+              h.tipoPeriodo === 'quincenal'
+                ? 'bg-cyan-400 text-black'
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
           >
-            Cerrar
+            Quincenal
           </button>
         </div>
+
+        {/* SELECT MES + AÑO */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+
+          {/* MES */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-2">
+              Mes
+            </label>
+
+            <select
+              className={inputS}
+              value={h.mes}
+              onChange={(e) => h.setMes(e.target.value)}
+            >
+              {mesesFiltrados.map((mes) => (
+                <option key={mes} value={mes}>
+                  {mes}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* AÑO */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-2">
+              Año
+            </label>
+
+            <select
+              className={inputS}
+              value={h.anio}
+              onChange={(e) => h.setAnio(e.target.value)}
+            >
+              {años.map((anio) => (
+                <option key={anio} value={anio}>
+                  {anio}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* QUINCENA */}
+        {h.tipoPeriodo === 'quincenal' && (
+          <div className="mb-6">
+            <label className="block text-xs text-slate-400 mb-2">
+              Quincena
+            </label>
+
+            <select
+              className={inputS}
+              value={h.quincena}
+              onChange={(e) =>
+                h.setQuincena(e.target.value as 'Q1' | 'Q2')
+              }
+            >
+              <option value="Q1">Primera (1 - 15)</option>
+              <option value="Q2">Segunda (16 - fin)</option>
+            </select>
+          </div>
+        )}
+
+        {/* PREVIEW */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-6">
+          <p className="text-xs text-slate-400">
+            Periodo generado
+          </p>
+
+          <p className="text-sm font-bold text-white mt-1">
+            {h.tipoPeriodo === 'quincenal'
+              ? `${h.mes} ${h.anio} ${h.quincena}`
+              : `${h.mes} ${h.anio}`}
+          </p>
+        </div>
+
+        {/* ACTIONS */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition"
+          >
+            Cancelar
+          </button>
+
+          <button
+            onClick={async () => {
+              const ok = await h.crearNomina();
+              if (ok) onClose();
+            }}
+            className="flex-1 py-3 rounded-xl bg-cyan-400 text-black font-black hover:bg-cyan-300 transition"
+          >
+            Crear
+          </button>
+        </div>
+
       </div>
     </div>
   );

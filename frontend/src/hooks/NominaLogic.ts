@@ -11,11 +11,9 @@ export function useNomina() {
 
   const [empleadoId, setEmpleadoId] = useState('');
   const [tipoPeriodo, setTipoPeriodo] = useState('mensual');
-  const [periodo, setPeriodo] = useState('');
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
-  const [mesInicio, setMesInicio] = useState('');
-const [mesFin, setMesFin] = useState('');
+  const [mes, setMes] = useState('mayo');
+  const [anio, setAnio] = useState('2026');
+  const [quincena, setQuincena] = useState<'Q1' | 'Q2'>('Q1');
 
   const [horasTrabajadas, setHorasTrabajadas] = useState(0);
   const [horasExtra, setHorasExtra] = useState(0);
@@ -196,47 +194,23 @@ const generarPdfEmpleado = async (detalleId: number) => {
     cargarDatos();
   }, []);
 
-const crearNomina = async () => {
-  if (!mesInicio || !mesFin) {
-    toast.error('Selecciona los meses');
-    return;
+const crearNomina = async (): Promise<boolean> => {
+  const periodoValue =
+    tipoPeriodo === 'quincenal'
+      ? `${mes}${anio}${quincena}`
+      : `${mes}${anio}`;
+
+  if (!periodoValue) {
+    toast.error('Selecciona el periodo de la nómina');
+    return false;
   }
-
-  const mesPattern = /^\d{4}-\d{2}$/;
-  if (!mesPattern.test(mesInicio) || !mesPattern.test(mesFin)) {
-    toast.error('Mes final inválido');
-    return;
-  }
-
-  const inicio = new Date(`${mesInicio}-01`);
-  const fin = new Date(`${mesFin}-01`);
-
-  if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
-    toast.error('Mes final inválido');
-    return;
-  }
-
-  if (fin < inicio) {
-    toast.error('Mes final inválido');
-    return;
-  }
-
-  const ultimoDia = new Date(
-    fin.getFullYear(),
-    fin.getMonth() + 1,
-    0
-  ).getDate();
-
-  const fechaInicio = `${mesInicio}-01`;
-  const fechaFin = `${mesFin}-${String(ultimoDia).padStart(2, '0')}`;
 
   try {
     setLoading(true);
 
     const res = await api.post('/nomina', {
       tipo_periodo: tipoPeriodo,
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
+      periodo: periodoValue,
       estado: 'abierta',
     });
 
@@ -244,7 +218,7 @@ const crearNomina = async () => {
 
     if (!data || data.length === 0) {
       toast.error('No se creó la nómina');
-      return;
+      return true;
     }
 
     const nominaSeleccionada = String(
@@ -252,6 +226,9 @@ const crearNomina = async () => {
     );
 
     setNominaId(nominaSeleccionada);
+    setMes('mayo');
+    setAnio('2026');
+    setQuincena('Q1');
 
     toast.success(
       data.length > 1
@@ -261,9 +238,11 @@ const crearNomina = async () => {
 
     await cargarDatos();
     await cargarDetalles(nominaSeleccionada);
+    return true;
   } catch (error) {
     console.error(error);
     toast.error('Error al crear nómina');
+    return false;
   } finally {
     setLoading(false);
   }
@@ -320,7 +299,15 @@ const agregarDetalle = async () => {
     };
   }, [detalles]);
 
-
+const formatDate = (date: string) => {
+  const d = new Date(date);
+  return new Intl.DateTimeFormat('es-GT', {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(d);
+};
   const agregarTodosEmpleados = async () => {
   if (!nominaId) {
     toast.error('Selecciona una nómina');
@@ -343,6 +330,25 @@ const agregarDetalle = async () => {
   }
 };
 
+const eliminarNomina = async (id: number) => {
+  if (!confirm('¿Deseas eliminar esta nómina?')) return;
+
+  try {
+    setLoading(true);
+    await api.delete(`/nomina/${id}/delete`);
+    toast.success('Nómina eliminada');
+    if (String(id) === nominaId) {
+      setNominaId('');
+    }
+    await cargarDatos();
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al eliminar la nómina');
+  } finally {
+    setLoading(false);
+  }
+};
+
   return {
     empleados,
     nominas,
@@ -355,16 +361,13 @@ const agregarDetalle = async () => {
 
     tipoPeriodo,
     setTipoPeriodo,
-    periodo,
-    setPeriodo,
-    fechaInicio,
-    setFechaInicio,
-    fechaFin,
-    setFechaFin,
-    setMesInicio,
-    mesInicio,
-    setMesFin,
-    mesFin,
+    mes,
+    setMes,
+    anio,
+    setAnio,
+    quincena,
+    setQuincena,
+    formatDate,
 
     horasTrabajadas,
     setHorasTrabajadas,
@@ -385,6 +388,7 @@ const agregarDetalle = async () => {
     agregarDetalle,
     cargarDetalles,
     cambiarEstado,
+    eliminarNomina,
 
     estadoActual,
     setEstadoActual,

@@ -16,19 +16,21 @@ export class CrearNominaDto {
   tipo_periodo!: TipoPeriodo;
   
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2026-01-01',
-    description: 'Fecha de inicio del rango de generación',
+    description: 'Fecha de inicio del rango de generación (opcional si se usa periodo)',
   })
+  @IsOptional()
   @IsDateString()
-  fecha_inicio!: Date;
+  fecha_inicio?: Date;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2026-12-31',
-    description: 'Fecha final del rango de generación',
+    description: 'Fecha final del rango de generación (opcional si se usa periodo)',
   })
+  @IsOptional()
   @IsDateString()
-  fecha_fin!: Date;
+  fecha_fin?: Date;
 
   @ApiPropertyOptional({
     example: 'abierta',
@@ -39,8 +41,8 @@ export class CrearNominaDto {
   estado?: string;
 
   @ApiPropertyOptional({
-    example: '2026-01',
-    description: 'Periodo manual (solo si no es generación automática)',
+    example: 'mayo2026',
+    description: 'Periodo de nómina. Ejemplos: mayo2026, 2026-05, mayo2026Q1, 2026-05-Q1',
   })
   @IsOptional()
   @IsString()

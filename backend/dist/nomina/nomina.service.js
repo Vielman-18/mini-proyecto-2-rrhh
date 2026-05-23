@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NominaService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const crear_nomina_dto_1 = require("./dto/crear-nomina.dto");
 const nomina_pdf_service_1 = require("../reportes/nomina-pdf/nomina-pdf.service");
 let NominaService = class NominaService {
     prisma;
@@ -93,14 +94,104 @@ let NominaService = class NominaService {
         }
         return this.nominaPdfService.generarBoletaEmpleado(detalle, res);
     }
+    parsePeriodo(periodo, tipoPeriodo) {
+        const normalized = periodo.trim().toLowerCase().replace(/\s+/g, '');
+        const meses = {
+            enero: 1,
+            febrero: 2,
+            marzo: 3,
+            abril: 4,
+            mayo: 5,
+            junio: 6,
+            julio: 7,
+            agosto: 8,
+            septiembre: 9,
+            octubre: 10,
+            noviembre: 11,
+            diciembre: 12,
+        };
+        const numericMatch = normalized.match(/^(\d{4})-?(\d{2})(?:-?q([12]))?$/i);
+        const textMatch = normalized.match(/^([a-záéíóúñ]+)-?(\d{4})(?:-?q([12]))?$/i);
+        let year;
+        let month;
+        let quincena;
+        if (numericMatch) {
+            year = Number(numericMatch[1]);
+            month = Number(numericMatch[2]) - 1;
+            if (numericMatch[3]) {
+                quincena = `Q${numericMatch[3]}`;
+            }
+        }
+        else if (textMatch) {
+            const mesNombre = textMatch[1];
+            const mesNumero = meses[mesNombre];
+            if (!mesNumero) {
+                throw new common_1.BadRequestException('Mes inválido en periodo. Use un mes válido como mayo, junio, etc.');
+            }
+            year = Number(textMatch[2]);
+            month = mesNumero - 1;
+            if (textMatch[3]) {
+                quincena = `Q${textMatch[3]}`;
+            }
+        }
+        else {
+            throw new common_1.BadRequestException('Periodo inválido. Use mayo2026, 2026-05, mayo2026Q1 o 2026-05-Q1.');
+        }
+        if (month < 0 || month > 11) {
+            throw new common_1.BadRequestException('Periodo inválido: mes fuera de rango.');
+        }
+        if (tipoPeriodo === crear_nomina_dto_1.TipoPeriodo.QUINCENAL && !quincena) {
+            throw new common_1.BadRequestException('Para periodos quincenales debe indicar Q1 o Q2.');
+        }
+        if (tipoPeriodo === crear_nomina_dto_1.TipoPeriodo.MENSUAL && quincena) {
+            throw new common_1.BadRequestException('Para periodos mensuales no use Q1 o Q2.');
+        }
+        const inicio = quincena === 'Q2'
+            ? new Date(year, month, 16)
+            : new Date(year, month, 1);
+        const fin = quincena === 'Q1'
+            ? new Date(year, month, 15)
+            : new Date(year, month + 1, 0);
+        const periodoCanon = tipoPeriodo === crear_nomina_dto_1.TipoPeriodo.MENSUAL
+            ? `${year}-${String(month + 1).padStart(2, '0')}`
+            : `${year}-${String(month + 1).padStart(2, '0')}-${quincena}`;
+        return { inicio, fin, periodo: periodoCanon };
+    }
     async crearNomina(dto) {
-        const inicio = new Date(dto.fecha_inicio);
-        const fin = new Date(dto.fecha_fin);
+        const crear = async (data) => this.prisma.nomina.create({ data });
+        let inicio;
+        let fin;
+        let periodo = dto.periodo?.trim();
+        if (periodo) {
+            const parsed = this.parsePeriodo(periodo, dto.tipo_periodo);
+            inicio = parsed.inicio;
+            fin = parsed.fin;
+            periodo = parsed.periodo;
+        }
+        else {
+            if (!dto.fecha_inicio || !dto.fecha_fin) {
+                throw new common_1.BadRequestException('Debe enviar periodo o las fechas fecha_inicio y fecha_fin.');
+            }
+            inicio = new Date(dto.fecha_inicio);
+            fin = new Date(dto.fecha_fin);
+            periodo = dto.periodo || '';
+        }
+        if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
+            throw new common_1.BadRequestException('Fechas inválidas para la nómina.');
+        }
         if (inicio > fin) {
             throw new common_1.BadRequestException('La fecha_inicio no puede ser mayor que fecha_fin');
         }
-        const nominas = [];
-        const crear = async (data) => this.prisma.nomina.create({ data });
+        if (dto.periodo) {
+            const nomina = await crear({
+                tipo_periodo: dto.tipo_periodo,
+                periodo,
+                fecha_inicio: inicio,
+                fecha_fin: fin,
+                estado: dto.estado || 'abierta',
+            });
+            return [nomina];
+        }
         if (dto.tipo_periodo === 'mensual') {
             const nominas = [];
             let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
@@ -165,7 +256,14 @@ let NominaService = class NominaService {
         return [nomina];
     }
     async eliminarNomina(id) {
-        await this.prisma.nomina.delete({ where: { id } });
+        const nomina = await this.prisma.nomina.findUnique({ where: { id } });
+        if (!nomina) {
+            throw new common_1.NotFoundException('Nómina no encontrada');
+        }
+        await this.prisma.nomina.update({
+            where: { id },
+            data: { estado: 'eliminada' },
+        });
     }
     async cambiarEstado(id, estado) {
         const nomina = await this.prisma.nomina.findUnique({ where: { id } });
@@ -193,6 +291,7 @@ let NominaService = class NominaService {
     }
     async listarNominas() {
         return this.prisma.nomina.findMany({
+            where: { NOT: { estado: 'eliminada' } },
             orderBy: { fecha_creacion: 'desc' },
             include: {
                 detalle_nomina: {

@@ -33,8 +33,10 @@ export const empleadosService = {
 };
 
 export const nominaService = {
-  crear: (periodo: string) => api.post('/nomina/crear', { periodo }),
-  listar: () => api.get('/nomina/listar'),
+  crear: (periodo: string, tipoPeriodo: string, estado: string) =>
+    api.post('/nomina', { tipo_periodo: tipoPeriodo, periodo, estado }),
+  listar: () => api.get('/nomina'),
+  eliminar: (id: number) => api.delete(`/nomina/${id}/delete`),
 };
 
 export const departamentosService = {

@@ -84,16 +84,24 @@ export default function Nomina() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => {
-                          h.setNominaId(String(n.id));
-                          h.setEstadoActual(n.estado);
-                          h.cargarDetalles(String(n.id));
-                        }}
-                        className="text-cyan-400 hover:text-cyan-300 font-semibold"
-                      >
-                        Gestionar
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => {
+                            h.setNominaId(String(n.id));
+                            h.setEstadoActual(n.estado);
+                            h.cargarDetalles(String(n.id));
+                          }}
+                          className="text-cyan-400 hover:text-cyan-300 font-semibold"
+                        >
+                          Gestionar
+                        </button>
+                        <button
+                          onClick={() => h.eliminarNomina(n.id)}
+                          className="text-red-400 hover:text-red-300 font-semibold"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
