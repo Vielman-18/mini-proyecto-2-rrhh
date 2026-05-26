@@ -97,8 +97,13 @@ export default function Nomina() {
                         </button>
                         <button
                           onClick={() => h.eliminarNomina(n.id)}
-                          className="text-red-400 hover:text-red-300 font-semibold"
-                        >
+                          disabled={n.estado === 'cerrada' || n.estado === 'procesada'}
+                           className={`px-4 py-2 rounded ${
+                                n.estado === 'cerrada'
+                                  ? 'bg-gray-400 cursor-not-allowed'
+                                  : 'bg-red-600 hover:bg-red-700'
+                              }`}
+                            >
                           Eliminar
                         </button>
                       </div>

@@ -347,27 +347,20 @@ export function ModalDetalleEmpleado({
             Descargar Recibo
           </button>
 
-                  <button
-          onClick={() => h.eliminarEmpleadoDeNomina(detalle.empleados.id)}
-          className="
-            flex-1
-            py-3
-            rounded-2xl
-            bg-red-500
-            hover:bg-red-400
-            transition
-            text-black
-            font-black
-          "
-        >
-          Quitar de nómina
-        </button>
-
+                <button
+                          onClick={() => h.eliminarNomina(n.id)}
+                          disabled={n.estado === 'cerrada' || n.estado === 'procesada'}
+                           className={`px-4 py-2 rounded ${
+                                n.estado === 'cerrada'
+                                  ? 'bg-gray-400 cursor-not-allowed'
+                                  : 'bg-red-600 hover:bg-red-700'
+                              }`}
+                            >
+                          Eliminar
+                        </button>
           <button
             onClick={onClose}
-            className="
-              flex-1
-              py-3
+            className="flex-1 py-3
               rounded-2xl
               bg-white
               hover:bg-slate-200
