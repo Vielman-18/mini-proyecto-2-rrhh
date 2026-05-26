@@ -114,7 +114,7 @@ model nomina {
   periodo        String           @db.VarChar(20)
   fecha_inicio   DateTime         @db.Date
   fecha_fin      DateTime         @db.Date
-  estado         String?          @default("abierta") @db.VarChar(20)
+  estado         String?          @default("activa") @db.VarChar(20)
   fecha_creacion DateTime?        @default(now()) @db.Timestamp(6)
   elimanado      Boolean?         @default(false)
   detalle_nomina detalle_nomina[]

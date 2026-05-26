@@ -14,12 +14,39 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const crear_nomina_dto_1 = require("./dto/crear-nomina.dto");
 const nomina_pdf_service_1 = require("../reportes/nomina-pdf/nomina-pdf.service");
+const cambiar_estado_dto_1 = require("./dto/cambiar-estado.dto");
 let NominaService = class NominaService {
     prisma;
     nominaPdfService;
     constructor(prisma, nominaPdfService) {
         this.prisma = prisma;
         this.nominaPdfService = nominaPdfService;
+    }
+    normalizarEstadoNomina(estado) {
+        if (!estado || estado === 'abierta') {
+            return cambiar_estado_dto_1.EstadoNomina.ACTIVA;
+        }
+        return estado;
+    }
+    validarNominaEditable(nomina) {
+        const estado = this.normalizarEstadoNomina(nomina.estado);
+        if (estado !== cambiar_estado_dto_1.EstadoNomina.ACTIVA) {
+            throw new common_1.BadRequestException('Solo se pueden modificar nóminas en estado ACTIVA.');
+        }
+    }
+    validarTransicionEstado(estadoActual, estadoSiguiente) {
+        if (estadoActual === cambiar_estado_dto_1.EstadoNomina.PROCESADA &&
+            estadoSiguiente !== cambiar_estado_dto_1.EstadoNomina.PROCESADA) {
+            throw new common_1.BadRequestException('No se puede cambiar el estado de una nómina procesada.');
+        }
+        if (estadoActual === cambiar_estado_dto_1.EstadoNomina.ACTIVA &&
+            estadoSiguiente === cambiar_estado_dto_1.EstadoNomina.PROCESADA) {
+            throw new common_1.BadRequestException('La nómina debe ser cerrada antes de procesarse.');
+        }
+        if (estadoActual === cambiar_estado_dto_1.EstadoNomina.CERRADA &&
+            estadoSiguiente !== cambiar_estado_dto_1.EstadoNomina.PROCESADA) {
+            throw new common_1.BadRequestException('Solo es posible procesar una nómina cerrada.');
+        }
     }
     async agregarTodosEmpleadosANomina(nominaId) {
         const nomina = await this.prisma.nomina.findUnique({
@@ -28,6 +55,7 @@ let NominaService = class NominaService {
         if (!nomina) {
             throw new common_1.NotFoundException('Nómina no encontrada');
         }
+        this.validarNominaEditable(nomina);
         const empleados = await this.prisma.empleados.findMany({
             where: { estado: 'activo' },
         });
@@ -188,7 +216,7 @@ let NominaService = class NominaService {
                 periodo,
                 fecha_inicio: inicio,
                 fecha_fin: fin,
-                estado: dto.estado || 'abierta',
+                estado: dto.estado || cambiar_estado_dto_1.EstadoNomina.ACTIVA,
             });
             return [nomina];
         }
@@ -206,7 +234,7 @@ let NominaService = class NominaService {
                         periodo: `${year}-${String(month + 1).padStart(2, '0')}`,
                         fecha_inicio: mesInicio,
                         fecha_fin: mesFin,
-                        estado: dto.estado || 'abierta',
+                        estado: dto.estado || cambiar_estado_dto_1.EstadoNomina.ACTIVA,
                     }));
                 }
                 cursor = new Date(year, month + 1, 1);
@@ -230,7 +258,7 @@ let NominaService = class NominaService {
                         periodo: `${periodoBase}-Q1`,
                         fecha_inicio: q1Start,
                         fecha_fin: q1End,
-                        estado: dto.estado || 'abierta',
+                        estado: dto.estado || cambiar_estado_dto_1.EstadoNomina.ACTIVA,
                     }));
                 }
                 if (q2End >= inicio && q2Start <= fin) {
@@ -239,7 +267,7 @@ let NominaService = class NominaService {
                         periodo: `${periodoBase}-Q2`,
                         fecha_inicio: q2Start,
                         fecha_fin: q2End,
-                        estado: dto.estado || 'abierta',
+                        estado: dto.estado || cambiar_estado_dto_1.EstadoNomina.ACTIVA,
                     }));
                 }
                 cursor = new Date(year, month + 1, 1);
@@ -251,7 +279,7 @@ let NominaService = class NominaService {
             periodo: dto.periodo,
             fecha_inicio: inicio,
             fecha_fin: fin,
-            estado: dto.estado || 'abierta',
+            estado: dto.estado || cambiar_estado_dto_1.EstadoNomina.ACTIVA,
         });
         return [nomina];
     }
@@ -260,6 +288,7 @@ let NominaService = class NominaService {
         if (!nomina) {
             throw new common_1.NotFoundException('Nómina no encontrada');
         }
+        this.validarNominaEditable(nomina);
         await this.prisma.nomina.update({
             where: { id },
             data: { estado: 'eliminada' },
@@ -270,12 +299,20 @@ let NominaService = class NominaService {
         if (!nomina) {
             throw new common_1.NotFoundException('Nómina no encontrada');
         }
+        const estadoActual = this.normalizarEstadoNomina(nomina.estado);
+        const estadoSiguiente = this.normalizarEstadoNomina(estado);
+        this.validarTransicionEstado(estadoActual, estadoSiguiente);
         return this.prisma.nomina.update({
             where: { id },
-            data: { estado },
+            data: { estado: estadoSiguiente },
         });
     }
     async eliminarEmpleadoDeNomina(nominaId, empleadoId) {
+        const nomina = await this.prisma.nomina.findUnique({ where: { id: nominaId } });
+        if (!nomina) {
+            throw new common_1.NotFoundException('Nómina no encontrada');
+        }
+        this.validarNominaEditable(nomina);
         const detalle = await this.prisma.detalle_nomina.findFirst({
             where: {
                 nomina_id: nominaId,
@@ -290,7 +327,7 @@ let NominaService = class NominaService {
         });
     }
     async listarNominas() {
-        return this.prisma.nomina.findMany({
+        const nominas = await this.prisma.nomina.findMany({
             where: { NOT: { estado: 'eliminada' } },
             orderBy: { fecha_creacion: 'desc' },
             include: {
@@ -299,6 +336,10 @@ let NominaService = class NominaService {
                 },
             },
         });
+        return nominas.map((nomina) => ({
+            ...nomina,
+            estado: this.normalizarEstadoNomina(nomina.estado),
+        }));
     }
     async crearDetalleNomina(dto) {
         const empleado = await this.prisma.empleados.findUnique({
@@ -313,6 +354,7 @@ let NominaService = class NominaService {
         if (!nomina) {
             throw new common_1.NotFoundException('Nómina no encontrada');
         }
+        this.validarNominaEditable(nomina);
         const existeDetalle = await this.prisma.detalle_nomina.findFirst({
             where: {
                 nomina_id: dto.nomina_id,

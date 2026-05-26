@@ -14,7 +14,7 @@ export type Nomina = {
   periodo: string;
   fecha_inicio: string;
   fecha_fin: string;
-  estado: string;
+  estado: 'activa' | 'cerrada' | 'procesada' | string;
 };
 
 export type DetalleNomina = {

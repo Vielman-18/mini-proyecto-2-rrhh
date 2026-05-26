@@ -346,18 +346,6 @@ export function ModalDetalleEmpleado({
           >
             Descargar Recibo
           </button>
-
-                <button
-                          onClick={() => h.eliminarNomina(n.id)}
-                          disabled={n.estado === 'cerrada' || n.estado === 'procesada'}
-                           className={`px-4 py-2 rounded ${
-                                n.estado === 'cerrada'
-                                  ? 'bg-gray-400 cursor-not-allowed'
-                                  : 'bg-red-600 hover:bg-red-700'
-                              }`}
-                            >
-                          Eliminar
-                        </button>
           <button
             onClick={onClose}
             className="flex-1 py-3
@@ -392,6 +380,8 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
   const empleado = h.empleados.find(
     (e: any) => String(e.id) === h.empleadoId
   );
+
+  const editable = h.estadoActual === 'activa';
 
   return (
     <div className="
@@ -496,12 +486,13 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
 
               <input
                 type="number"
-                className={inputS}
+                className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
                 placeholder="0"
                 value={h.horasExtra}
                 onChange={(e) =>
                   h.setHorasExtra(Number(e.target.value))
                 }
+                disabled={!editable}
               />
             </div>
             <div>
@@ -511,12 +502,13 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
 
               <input
                 type="number"
-                className={inputS}
+                className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
                 placeholder="0"
                 value={h.bonificaciones}
                 onChange={(e) =>
                   h.setBonificaciones(Number(e.target.value))
                 }
+                disabled={!editable}
               />
             </div>
 
@@ -527,12 +519,13 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
 
               <input
                 type="number"
-                className={inputS}
+                className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
                 placeholder="0"
                 value={h.comisiones}
                 onChange={(e) =>
                   h.setComisiones(Number(e.target.value))
                 }
+                disabled={!editable}
               />
             </div>
           </div>
@@ -545,12 +538,13 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
 
             <input
               type="number"
-              className={inputS}
+              className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
               placeholder="0"
               value={h.descuentosLegales}
               onChange={(e) =>
                 h.setDescuentosLegales(Number(e.target.value))
               }
+              disabled={!editable}
             />
           </div>
 
@@ -574,10 +568,13 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
 
             <button
               onClick={() => {
-                h.agregarDetalle();
-                onClose();
+                if (editable) {
+                  h.agregarDetalle();
+                  onClose();
+                }
               }}
-              className="
+              disabled={!editable}
+              className={`
                 flex-1
                 py-3
                 rounded-2xl
@@ -586,7 +583,8 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
                 transition
                 text-black
                 font-black
-              "
+                ${!editable ? 'opacity-60 cursor-not-allowed' : ''}
+              `}
             >
               Guardar
             </button>

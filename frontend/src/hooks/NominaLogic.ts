@@ -25,7 +25,25 @@ export function useNomina() {
   const [loading, setLoading] = useState(false);
   const [estadoActual, setEstadoActual] = useState<string>('');
 
-  const eliminarEmpleadoDeNomina = async (empleadoId: number) => {
+  const normalizeEstadoNomina = (estado?: string) => {
+    if (!estado || estado === 'abierta') return 'activa';
+    if (estado === 'inactiva') return 'procesada';
+    return estado;
+  };
+
+  const isNominaActiva = (estado?: string) =>
+    normalizeEstadoNomina(estado) === 'activa';
+
+const eliminarEmpleadoDeNomina = async (
+  empleadoId: number,
+) => {
+  if (!isNominaActiva(estadoActual)) {
+    toast.error(
+      'Solo se pueden eliminar empleados de nóminas activas'
+    );
+    return;
+  }
+
   if (!nominaId) {
     toast.error('Selecciona una nómina');
     return;
@@ -34,7 +52,9 @@ export function useNomina() {
   try {
     setLoading(true);
 
-    await api.delete(`/nomina/${nominaId}/empleado/${empleadoId}`);
+    await api.delete(
+      `/nomina/${nominaId}/empleado/${empleadoId}`
+    );
 
     toast.success('Empleado removido de la nómina');
 
@@ -154,6 +174,33 @@ const generarPdfEmpleado = async (detalleId: number) => {
       return;
     }
 
+    const estadoActualNormalizado = normalizeEstadoNomina(estadoActual);
+    const nuevoEstadoNormalizado = normalizeEstadoNomina(nuevoEstado);
+
+    if (
+      estadoActualNormalizado === 'procesada' &&
+      nuevoEstadoNormalizado !== 'procesada'
+    ) {
+      toast.error('No se puede reabrir una nómina procesada.');
+      return;
+    }
+
+    if (
+      estadoActualNormalizado === 'activa' &&
+      nuevoEstadoNormalizado === 'procesada'
+    ) {
+      toast.error('La nómina debe cerrarse antes de procesarse.');
+      return;
+    }
+
+    if (
+      estadoActualNormalizado === 'cerrada' &&
+      nuevoEstadoNormalizado !== 'procesada'
+    ) {
+      toast.error('Solo es posible procesar una nómina cerrada.');
+      return;
+    }
+
     try {
       setLoading(true);
       await api.put(`/nomina/${nominaId}/estado`, { estado: nuevoEstado });
@@ -181,9 +228,14 @@ const generarPdfEmpleado = async (detalleId: number) => {
         api.get('/nomina'),
       ]);
 
-      console.log('Nóminas cargadas:', nom.data);
+      const nominasNormalizadas = nom.data.map((nomina: Nomina) => ({
+        ...nomina,
+        estado: normalizeEstadoNomina(nomina.estado),
+      }));
+
+      console.log('Nóminas cargadas:', nominasNormalizadas);
       setEmpleados(emp.data.filter((e: Empleado) => e.estado === 'activo'));
-      setNominas(nom.data);
+      setNominas(nominasNormalizadas);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       toast.error('Error al cargar datos');
@@ -211,7 +263,7 @@ const crearNomina = async (): Promise<boolean> => {
     const res = await api.post('/nomina', {
       tipo_periodo: tipoPeriodo,
       periodo: periodoValue,
-      estado: 'abierta',
+      estado: 'activa',
     });
 
     const data = Array.isArray(res.data) ? res.data : [res.data];
@@ -249,6 +301,11 @@ const crearNomina = async (): Promise<boolean> => {
 };
 
 const agregarDetalle = async () => {
+  if (!isNominaActiva(estadoActual)) {
+    toast.error('Solo se pueden agregar empleados a nóminas ACTIVA.');
+    return;
+  }
+
   if (!nominaId || isNaN(Number(nominaId))) {
     toast.error('Nómina inválida');
     return;
@@ -309,6 +366,11 @@ const formatDate = (date: string) => {
   }).format(d);
 };
   const agregarTodosEmpleados = async () => {
+  if (!isNominaActiva(estadoActual)) {
+    toast.error('Solo se pueden agregar empleados a nóminas ACTIVA.');
+    return;
+  }
+
   if (!nominaId) {
     toast.error('Selecciona una nómina');
     return;
@@ -331,6 +393,13 @@ const formatDate = (date: string) => {
 };
 
 const eliminarNomina = async (id: number) => {
+  const nomina = nominas.find((n) => n.id === id);
+
+  if (nomina && !isNominaActiva(nomina.estado)) {
+    toast.error('Solo se pueden eliminar nóminas ACTIVA.');
+    return;
+  }
+
   if (!confirm('¿Deseas eliminar esta nómina?')) return;
 
   try {
