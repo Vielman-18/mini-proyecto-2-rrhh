@@ -22,6 +22,74 @@ let NominaService = class NominaService {
         this.prisma = prisma;
         this.nominaPdfService = nominaPdfService;
     }
+    async agregarEmpleadosPorDepartamento(nominaId, departamentoId) {
+        const nomina = await this.prisma.nomina.findUnique({
+            where: { id: nominaId },
+        });
+        if (!nomina) {
+            throw new common_1.NotFoundException('Nómina no encontrada');
+        }
+        this.validarNominaEditable(nomina);
+        const empleados = await this.prisma.empleados.findMany({
+            where: {
+                estado: 'activo',
+                departamento_id: departamentoId,
+            },
+        });
+        if (empleados.length === 0) {
+            throw new common_1.NotFoundException('No hay empleados en este departamento');
+        }
+        const parametros = await this.prisma.parametros_nomina.findMany({
+            where: { activo: true },
+        });
+        const igssPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IGSS')?.valor) || 4.83;
+        const irtraPorcentaje = Number(parametros.find(p => p.nombre?.toUpperCase() === 'IRTRA')?.valor) || 1;
+        const resultados = [];
+        for (const empleado of empleados) {
+            const existeDetalle = await this.prisma.detalle_nomina.findFirst({
+                where: {
+                    nomina_id: nominaId,
+                    empleado_id: empleado.id,
+                },
+            });
+            if (existeDetalle)
+                continue;
+            const salarioMensual = Number(empleado.salario);
+            let salarioBase = salarioMensual;
+            if (nomina.tipo_periodo === 'quincenal') {
+                salarioBase = salarioMensual / 2;
+            }
+            const valorHora = salarioMensual / 240;
+            const ingresoGravable = salarioBase;
+            const igss = ingresoGravable * (igssPorcentaje / 100);
+            const irtra = ingresoGravable * (irtraPorcentaje / 100);
+            const deducciones = igss + irtra;
+            const salarioFinal = ingresoGravable - deducciones;
+            const detalle = await this.prisma.detalle_nomina.create({
+                data: {
+                    nomina_id: nominaId,
+                    empleado_id: empleado.id,
+                    salario_base: salarioBase,
+                    horas_extra: 0,
+                    monto_horas_extra: 0,
+                    bonificaciones: 0,
+                    comisiones: 0,
+                    igss,
+                    irtra,
+                    descuentos_legales: 0,
+                    deducciones,
+                    salario_final: salarioFinal,
+                },
+            });
+            resultados.push(detalle);
+        }
+        return {
+            total_agregados: resultados.length,
+            nomina_id: nominaId,
+            departamento_id: departamentoId,
+            detalles: resultados,
+        };
+    }
     normalizarEstadoNomina(estado) {
         if (!estado || estado === 'abierta') {
             return cambiar_estado_dto_1.EstadoNomina.ACTIVA;

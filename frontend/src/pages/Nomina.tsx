@@ -151,67 +151,100 @@ export default function Nomina() {
        <div className="bg-[#0b1017] border border-white/10 rounded-3xl p-6">
 
   {/* HEADER SUPERIOR */}
-  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+ <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
 
-    <div>
-      <button
-        onClick={() => h.setNominaId('')}
-        className="text-cyan-400 mb-3 hover:underline"
+  {/* INFO IZQUIERDA */}
+  <div>
+    <button
+      onClick={() => h.setNominaId('')}
+      className="text-cyan-400 mb-3 hover:underline"
+    >
+      ← Volver
+    </button>
+
+    <h2 className="text-3xl font-black">
+      Nómina #{h.nominaId}
+    </h2>
+
+    <p className="text-slate-400 text-sm mt-1">
+      Gestión de empleados, salarios y deducciones
+    </p>
+
+    {/* ESTADO */}
+    <div className="mt-4 flex items-center gap-3">
+      <label className="text-slate-400 text-sm">Estado:</label>
+
+      <select
+        value={estadoActualNormalizado}
+        onChange={(e) => h.cambiarEstado(e.target.value)}
+        disabled={h.loading || estadoActualNormalizado === 'procesada'}
+        className="bg-[#05070a] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 disabled:opacity-60"
       >
-        ← Volver
-      </button>
+        {estadoOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
 
-      <h2 className="text-3xl font-black">
-        Nómina #{h.nominaId}
-      </h2>
-
-      <p className="text-slate-400 text-sm mt-1">
-        Gestión de empleados, salarios y deducciones
-      </p>
-
-      {/* Estado */}
-      <div className="mt-4 flex items-center gap-3">
-        <label className="text-slate-400 text-sm">Estado:</label>
-
-        <select
-          value={estadoActualNormalizado}
-          onChange={(e) => h.cambiarEstado(e.target.value)}
-          disabled={
-            h.loading ||
-            estadoActualNormalizado === 'procesada'
-          }
-          className="bg-[#05070a] border border-white/10 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 disabled:opacity-60"
-        >
-          {estadoOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-
-        <span
-          className={`px-3 py-1 rounded-xl text-xs font-bold ${
-            estadoActualNormalizado === 'activa'
-              ? 'bg-emerald-500/10 text-emerald-400'
-              : estadoActualNormalizado === 'cerrada'
-              ? 'bg-amber-500/10 text-amber-400'
-              : 'bg-slate-500/10 text-slate-300'
-          }`}
-        >
-          {estadoActualNormalizado.toUpperCase()}
-        </span>
-      </div>
+      <span
+        className={`px-3 py-1 rounded-xl text-xs font-bold ${
+          estadoActualNormalizado === 'activa'
+            ? 'bg-emerald-500/10 text-emerald-400'
+            : estadoActualNormalizado === 'cerrada'
+            ? 'bg-amber-500/10 text-amber-400'
+            : 'bg-slate-500/10 text-slate-300'
+        }`}
+      >
+        {estadoActualNormalizado.toUpperCase()}
+      </span>
     </div>
+  </div>
 
-    {/* ACCIÓN PRINCIPAL */}
+  {/* ACCIONES DERECHA */}
+  <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+
+    {/* BOTÓN: TODOS */}
     <button
       onClick={h.agregarTodosEmpleados}
       disabled={!isNominaEditable || h.loading}
       className="px-5 py-3 bg-white hover:bg-slate-200 transition text-black font-black rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
     >
-      + Agregar todos los empleados
+      + Agregar todos
     </button>
+
+    {/* SELECT DEPARTAMENTO */}
+    <select
+      value={h.departamentoId}
+      onChange={(e) => h.setDepartamentoId(e.target.value)}
+      className="px-4 py-3 bg-[#05070a] border border-white/10 rounded-2xl text-white outline-none focus:border-cyan-400"
+    >
+      <option value="">Departamento</option>
+
+      {h.departamentos.map((d: any) => (
+        <option key={d.id} value={d.id}>
+          {d.nombre}
+        </option>
+      ))}
+    </select>
+
+    {/* BOTÓN: POR DEPARTAMENTO */}
+    <button
+      onClick={() =>
+        h.agregarEmpleadosPorDepartamento(Number(h.departamentoId))
+      }
+      disabled={
+        !isNominaEditable ||
+        h.loading ||
+        !h.departamentoId
+      }
+      className="px-5 py-3 bg-cyan-400 hover:bg-cyan-300 transition text-black font-black rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed"
+    >
+      + Por departamento
+    </button>
+
   </div>
+</div>
 
   {/* KPIs */}
   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

@@ -3,10 +3,17 @@ import api from '../api/axios';
 import toast from 'react-hot-toast';
 import type { Empleado, Nomina, DetalleNomina,} from '../types/nomina';
 
+type Departamento = {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+};
+
 export function useNomina() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [nominas, setNominas] = useState<Nomina[]>([]);
   const [detalles, setDetalles] = useState<DetalleNomina[]>([]);
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [nominaId, setNominaId] = useState<string>('');
 
   const [empleadoId, setEmpleadoId] = useState('');
@@ -24,6 +31,7 @@ export function useNomina() {
 
   const [loading, setLoading] = useState(false);
   const [estadoActual, setEstadoActual] = useState<string>('');
+  const [departamentoId, setDepartamentoId] = useState('');
 
   const normalizeEstadoNomina = (estado?: string) => {
     if (!estado || estado === 'abierta') return 'activa';
@@ -223,9 +231,10 @@ const generarPdfEmpleado = async (detalleId: number) => {
 
   const cargarDatos = async () => {
     try {
-      const [emp, nom] = await Promise.all([
+      const [emp, nom, deps] = await Promise.all([
         api.get('/empleados'),
         api.get('/nomina'),
+        api.get('/departamentos'),
       ]);
 
       const nominasNormalizadas = nom.data.map((nomina: Nomina) => ({
@@ -236,6 +245,7 @@ const generarPdfEmpleado = async (detalleId: number) => {
       console.log('Nóminas cargadas:', nominasNormalizadas);
       setEmpleados(emp.data.filter((e: Empleado) => e.estado === 'activo'));
       setNominas(nominasNormalizadas);
+      setDepartamentos(deps.data || []);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       toast.error('Error al cargar datos');
@@ -392,6 +402,28 @@ const formatDate = (date: string) => {
   }
 };
 
+const agregarEmpleadosPorDepartamento = async (departamentoId: number) => {
+  if (!isNominaActiva(estadoActual)) {
+    toast.error('Solo se pueden agregar empleados a nóminas ACTIVA.');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    const res = await api.post(`/nomina/${nominaId}/departamento/${departamentoId}`);
+
+    toast.success(`Se agregaron ${res.data.total_agregados} empleados`);
+
+    await cargarDetalles(nominaId);
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al agregar empleados');
+  } finally {
+    setLoading(false);
+  }
+};
+
 const eliminarNomina = async (id: number) => {
   const nomina = nominas.find((n) => n.id === id);
 
@@ -451,6 +483,9 @@ const eliminarNomina = async (id: number) => {
     descuentosLegales,
     setDescuentosLegales,
 
+    departamentoId,
+setDepartamentoId,
+
     loading,
 
     crearNomina,
@@ -467,5 +502,7 @@ const eliminarNomina = async (id: number) => {
     generarPdfEmpleado,
     eliminarEmpleadoDeNomina,
     agregarTodosEmpleados,
+    agregarEmpleadosPorDepartamento,
+    departamentos,
   };
 }
