@@ -1,9 +1,63 @@
+import React from 'react';
+
+
 export const quetzal = (v: any) =>
   `Q${Number(v || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
 
 const inputS =
   "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-400 outline-none transition-all placeholder:text-slate-600 text-sm";
 
+
+/**
+ * MODAL DE CONFIRMACIÓN (NUEVO)
+ * Para acciones de agregar empleados masivamente
+ */
+export function ModalConfirmacionAction({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  titulo, 
+  mensaje, 
+  loading 
+}: any) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-sm bg-[#0b1017] rounded-2xl p-6 border border-white/10">
+        
+        <h3 className="text-xl font-bold text-white mb-3">
+          {titulo || 'Confirmación'}
+        </h3>
+
+        <p className="text-slate-400 text-sm mb-6">
+          {mensaje}
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition"
+          >
+            Cancelar
+          </button>
+
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-3 rounded-xl bg-cyan-400 text-black font-bold hover:bg-cyan-300 transition disabled:opacity-50"
+          >
+            {loading ? 'Procesando...' : 'Aceptar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * MODAL PARA CREAR NÓMINA (PERIODO)
+ */
 export function ModalPeriodo({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 
@@ -17,578 +71,187 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
   ];
 
   const mesesFiltrados = meses.filter((_, index) => index >= currentMonth);
-
-  const años = Array.from({ length: 5 }, (_, i) =>
-    String(currentYear + i)
-  );
+  const años = Array.from({ length: 5 }, (_, i) => String(currentYear + i));
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6">
-
-      <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl">
-
-        {/* HEADER */}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+      <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl animate-in fade-in zoom-in duration-200">
         <div className="mb-6">
-          <h2 className="text-2xl font-black text-white">
-            Crear Nómina
-          </h2>
-          <p className="text-slate-400 text-sm">
-            Selecciona el periodo de cálculo
-          </p>
+          <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">Crear Nómina</h2>
+          <p className="text-slate-400 text-sm font-medium">Selecciona el periodo de cálculo para iniciar</p>
         </div>
 
-        {/* TIPO PERIODO */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <button
-            onClick={() => h.setTipoPeriodo('mensual')}
-            className={`py-3 rounded-xl font-black transition ${
-              h.tipoPeriodo === 'mensual'
-                ? 'bg-cyan-400 text-black'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            Mensual
-          </button>
-
-          <button
-            onClick={() => h.setTipoPeriodo('quincenal')}
-            className={`py-3 rounded-xl font-black transition ${
-              h.tipoPeriodo === 'quincenal'
-                ? 'bg-cyan-400 text-black'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            Quincenal
-          </button>
+          {['mensual', 'quincenal'].map((tipo) => (
+            <button
+              key={tipo}
+              onClick={() => h.setTipoPeriodo(tipo)}
+              className={`py-4 rounded-2xl font-black transition-all capitalize ${
+                h.tipoPeriodo === tipo 
+                  ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' 
+                  : 'bg-white/5 text-white hover:bg-white/10'
+              }`}
+            >
+              {tipo}
+            </button>
+          ))}
         </div>
 
-        {/* SELECT MES + AÑO */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-
-          {/* MES */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="block text-xs text-slate-400 mb-2">
-              Mes
-            </label>
-
-            <select
-              className={inputS}
-              value={h.mes}
-              onChange={(e) => h.setMes(e.target.value)}
-            >
-              {mesesFiltrados.map((mes) => (
-                <option key={mes} value={mes}>
-                  {mes}
-                </option>
-              ))}
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Mes</label>
+            <select className={inputS} value={h.mes} onChange={(e) => h.setMes(e.target.value)}>
+              {mesesFiltrados.map((m) => <option key={m} value={m} className="bg-slate-900">{m}</option>)}
             </select>
           </div>
-
-          {/* AÑO */}
           <div>
-            <label className="block text-xs text-slate-400 mb-2">
-              Año
-            </label>
-
-            <select
-              className={inputS}
-              value={h.anio}
-              onChange={(e) => h.setAnio(e.target.value)}
-            >
-              {años.map((anio) => (
-                <option key={anio} value={anio}>
-                  {anio}
-                </option>
-              ))}
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Año</label>
+            <select className={inputS} value={h.anio} onChange={(e) => h.setAnio(e.target.value)}>
+              {años.map((a) => <option key={a} value={a} className="bg-slate-900">{a}</option>)}
             </select>
           </div>
         </div>
 
-        {/* QUINCENA */}
-        {h.tipoPeriodo === 'quincenal' && (
-          <div className="mb-6">
-            <label className="block text-xs text-slate-400 mb-2">
-              Quincena
-            </label>
-
-            <select
-              className={inputS}
-              value={h.quincena}
-              onChange={(e) =>
-                h.setQuincena(e.target.value as 'Q1' | 'Q2')
-              }
-            >
-              <option value="Q1">Primera (1 - 15)</option>
-              <option value="Q2">Segunda (16 - fin)</option>
-            </select>
+        <div className="bg-cyan-400/10 border border-cyan-400/20 rounded-2xl p-4 mb-8">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-cyan-400 text-xs">ℹ</span>
+            <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest">Configuración Detectada</p>
           </div>
-        )}
-
-        {/* PREVIEW */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-6">
-          <p className="text-xs text-slate-400">
-            Periodo generado
-          </p>
-
-          <p className="text-sm font-bold text-white mt-1">
-            {h.tipoPeriodo === 'quincenal'
-              ? `${h.mes} ${h.anio} ${h.quincena}`
-              : `${h.mes} ${h.anio}`}
+          <p className="text-white/90 text-sm leading-snug">
+            {h.tipoPeriodo === 'quincenal' 
+              ? `Se generarán automáticamente la **Q1** y **Q2** de ${h.mes}.`
+              : `Se generará la nómina mensual completa para ${h.mes} ${h.anio}.`}
           </p>
         </div>
 
-        {/* ACTIONS */}
         <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-white/5 text-white font-bold hover:bg-white/10 transition">Cancelar</button>
           <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition"
+            onClick={async () => { const ok = await h.crearNomina(); if (ok) onClose(); }}
+            className="flex-1 py-4 rounded-2xl bg-cyan-400 text-black font-black hover:bg-cyan-300 transition active:scale-95"
           >
-            Cancelar
-          </button>
-
-          <button
-            onClick={async () => {
-              const ok = await h.crearNomina();
-              if (ok) onClose();
-            }}
-            className="flex-1 py-3 rounded-xl bg-cyan-400 text-black font-black hover:bg-cyan-300 transition"
-          >
-            Crear
+            Generar Ahora
           </button>
         </div>
-
       </div>
     </div>
   );
 }
 
-export function ModalDetalleEmpleado({
-  isOpen,
-  onClose,
-  detalle,
-  h,
-}: any) {
+
+export function ModalDetalleEmpleado({ isOpen, onClose, detalle, h }: any) {
   if (!isOpen || !detalle) return null;
 
+  const CardInfo = ({ label, value, color = "text-white" }: any) => (
+    <div className="bg-[#05070a] border border-white/5 rounded-2xl p-4">
+      <p className="text-slate-500 text-xs font-bold uppercase mb-1">{label}</p>
+      <h3 className={`font-bold text-lg ${color}`}>{value}</h3>
+    </div>
+  );
+
   return (
-    <div
-      className="
-        fixed inset-0 z-[200]
-        flex items-center justify-center
-        bg-black/70 backdrop-blur-sm
-        p-4
-      "
-    >
-      <div
-        className="
-          w-full max-w-2xl
-          bg-[#0b1017]
-          border border-white/10
-          rounded-3xl
-          overflow-hidden
-        "
-      >
-        {/* HEADER */}
-        <div
-          className="
-            flex items-center justify-between
-            px-6 py-5
-            border-b border-white/10
-          "
-        >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+      <div className="w-full max-w-2xl bg-[#0b1017] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300">
+        
+        <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-white/5">
           <div>
-            <h2 className="text-2xl font-black text-white">
-              Detalle de Pago
-            </h2>
-
-            <p className="text-slate-400 text-sm mt-1">
-              Información completa del empleado
-            </p>
+            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Detalle de Pago</h2>
+            <p className="text-cyan-400 text-sm font-bold">#{detalle.empleados?.id} — {detalle.empleados?.nombres} {detalle.empleados?.apellidos}</p>
           </div>
-
-          <button
-            onClick={onClose}
-            className="
-              w-10 h-10
-              rounded-xl
-              bg-white/5
-              hover:bg-white/10
-              transition
-              text-slate-300
-              font-bold
-            "
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className="w-12 h-12 rounded-2xl bg-white/5 hover:bg-red-500/20 hover:text-red-400 transition-all text-slate-400 text-xl font-light">✕</button>
         </div>
 
-        {/* BODY */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">Empleado</p>
-
-            <h3 className="font-bold mt-1">
-              {detalle.empleados?.nombres}{' '}
-              {detalle.empleados?.apellidos}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">ID Empleado</p>
-
-            <h3 className="font-bold mt-1">
-              #{detalle.empleados?.id}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">Salario Base</p>
-
-            <h3 className="font-bold mt-1 text-cyan-400">
-              {quetzal(detalle.salario_base)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Horas No Trabajadas
-            </p>
-
-            <h3 className="font-bold mt-1">
-              {detalle.horas_trabajadas}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">Horas Extra</p>
-
-            <h3 className="font-bold mt-1">
-              {detalle.horas_extra}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Bonificaciones
-            </p>
-
-            <h3 className="font-bold mt-1 text-emerald-400">
-              {quetzal(detalle.bonificaciones)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Comisiones
-            </p>
-
-            <h3 className="font-bold mt-1 text-emerald-400">
-              {quetzal(detalle.comisiones)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Deducciones
-            </p>
-
-            <h3 className="font-bold mt-1 text-red-400">
-              {quetzal(detalle.deducciones)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Descuentos Legales
-            </p>
-
-            <h3 className="font-bold mt-1 text-red-400">
-              {quetzal(detalle.descuentos_legales)}
-            </h3>
-          </div>
-
-          <div
-            className="
-              bg-cyan-400/10
-              border border-cyan-400/20
-              rounded-2xl
-              p-4
-            "
-          >
-            <p className="text-cyan-300 text-sm">
-              Salario Final
-            </p>
-
-            <h3 className="text-3xl font-black text-cyan-400 mt-1">
-              {quetzal(detalle.salario_final)}
-            </h3>
+        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardInfo label="Salario Base" value={quetzal(detalle.salario_base)} color="text-cyan-400" />
+          <CardInfo label="Bonificaciones" value={quetzal(detalle.bonificaciones)} color="text-emerald-400" />
+          <CardInfo label="Comisiones" value={quetzal(detalle.comisiones)} color="text-emerald-400" />
+          <CardInfo label="Deducciones" value={quetzal(detalle.deducciones)} color="text-rose-400" />
+          
+          <div className="bg-cyan-400/10 border border-cyan-400/20 rounded-3xl p-6 md:col-span-2 mt-2 flex justify-between items-center">
+            <div>
+              <p className="text-cyan-300 text-xs font-black uppercase tracking-widest mb-1">Total Salario Líquido</p>
+              <h3 className="text-4xl font-black text-cyan-400 tracking-tighter">{quetzal(detalle.salario_final)}</h3>
+            </div>
+            <div className="text-4xl opacity-20">💰</div>
           </div>
         </div>
 
-        {/* FOOTER */}
-        <div className="px-6 pb-6 flex gap-3">
-
-          <button
-            onClick={() =>
-              h.generarPdfEmpleado(detalle.id)
-            }
-            className="
-              flex-1
-              py-3
-              rounded-2xl
-              bg-emerald-400
-              hover:bg-emerald-300
-              transition
-              text-black
-              font-black
-            "
-          >
-            Descargar Recibo
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 py-3
-              rounded-2xl
-              bg-white
-              hover:bg-slate-200
-              transition
-              text-black
-              font-black
-            "
-          >
-            Cerrar
-          </button>
+        <div className="px-8 pb-8 flex gap-3">
+          <button onClick={() => h.generarPdfEmpleado(detalle.id)} className="flex-[2] py-4 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-black font-black transition active:scale-95 shadow-lg">Descargar Recibo</button>
+          <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-white text-black font-black hover:bg-slate-200 transition active:scale-95">Cerrar</button>
         </div>
       </div>
     </div>
   );
 }
+
+
 export function DrawerEmpleado({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 
-  const cerrarPanel = () => {
-    const confirmar = window.confirm(
-      'Si sales no se guardarán los cambios'
-    );
-
-    if (confirmar) {
-      onClose();
-    }
-  };
-
-  const empleado = h.empleados.find(
-    (e: any) => String(e.id) === h.empleadoId
-  );
-
+  const empleado = h.empleados.find((e: any) => String(e.id) === h.empleadoId);
   const editable = h.estadoActual === 'activa';
 
+  const InputField = ({ label, value, onChange, type = "number" }: any) => (
+    <div>
+      <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">{label}</label>
+      <input
+        type={type}
+        className={`${inputS} ${!editable ? 'opacity-50 cursor-not-allowed' : ''}`}
+        placeholder="0.00"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        disabled={!editable}
+      />
+    </div>
+  );
+
   return (
-    <div className="
-      fixed inset-0 z-[100]
-      flex items-center justify-center
-      bg-black/70 backdrop-blur-sm
-      p-4
-    ">
-
-      <div className="
-        w-full max-w-[520px]
-        bg-[#0b1017]
-        border border-white/10
-        rounded-3xl
-        overflow-hidden
-        shadow-2xl
-      ">
-
-        {/* HEADER */}
-        <div className="
-          flex items-center justify-between
-          px-6 py-5
-          border-b border-white/10
-        ">
-
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-[520px] bg-[#0b1017] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
+        
+        <div className="px-8 py-6 border-b border-white/5 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-black text-white">
-              Agregar empleado
-            </h2>
-
-            <p className="text-slate-400 text-sm mt-1">
-              Completa los datos de nómina
-            </p>
+            <h2 className="text-2xl font-black text-white italic uppercase tracking-tighter">Añadir Empleado</h2>
+            <p className="text-slate-500 text-sm font-medium">Asignación individual a nómina</p>
           </div>
-
-          <button
-            onClick={cerrarPanel}
-            className="
-              w-10 h-10
-              rounded-xl
-              bg-white/5
-              hover:bg-red-500/20
-              hover:text-red-400
-              transition
-              text-slate-300
-              font-bold
-            "
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition text-2xl">✕</button>
         </div>
 
-        {/* BODY */}
-        <div className="p-6 space-y-5">
-
-          {/* EMPLEADO */}
+        <div className="p-8 space-y-6">
           <div>
-            <label className="block text-sm text-slate-400 mb-2">
-              Empleado
-            </label>
-
-            <select
-              className={inputS}
-              value={h.empleadoId}
-              onChange={(e) => h.setEmpleadoId(e.target.value)}
-            >
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Seleccionar Colaborador</label>
+            <select className={inputS} value={h.empleadoId} onChange={(e) => h.setEmpleadoId(e.target.value)}>
               <option value="">Selecciona un empleado</option>
-
               {h.empleados.map((e: any) => (
-                <option key={e.id} value={e.id}>
-                  {e.nombres} {e.apellidos}
-                </option>
+                <option key={e.id} value={e.id} className="bg-slate-900">{e.nombres} {e.apellidos}</option>
               ))}
             </select>
           </div>
 
-          {/* RESUMEN */}
           {empleado && (
-            <div className="
-              bg-[#05070a]
-              border border-white/10
-              rounded-2xl
-              p-4
-            ">
-              <p className="text-slate-400 text-sm mb-2">
-                Salario base
-              </p>
-
-              <h3 className="text-2xl font-black text-cyan-400">
-                Q {Number(empleado.salario || 0).toFixed(2)}
-              </h3>
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex justify-between items-center animate-in fade-in slide-in-from-top-2">
+              <span className="text-slate-400 font-bold uppercase text-xs tracking-widest">Sueldo Base</span>
+              <h3 className="text-2xl font-black text-cyan-400">{quetzal(empleado.salario)}</h3>
             </div>
           )}
 
-          {/* CAMPOS */}
           <div className="grid grid-cols-2 gap-4">
-
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Horas extra
-              </label>
-
-              <input
-                type="number"
-                className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
-                placeholder="0"
-                value={h.horasExtra}
-                onChange={(e) =>
-                  h.setHorasExtra(Number(e.target.value))
-                }
-                disabled={!editable}
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Bonificaciones
-              </label>
-
-              <input
-                type="number"
-                className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
-                placeholder="0"
-                value={h.bonificaciones}
-                onChange={(e) =>
-                  h.setBonificaciones(Number(e.target.value))
-                }
-                disabled={!editable}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Comisiones
-              </label>
-
-              <input
-                type="number"
-                className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
-                placeholder="0"
-                value={h.comisiones}
-                onChange={(e) =>
-                  h.setComisiones(Number(e.target.value))
-                }
-                disabled={!editable}
-              />
-            </div>
+            <InputField label="Horas Extra" value={h.horasExtra} onChange={h.setHorasExtra} />
+            <InputField label="Bonificaciones" value={h.bonificaciones} onChange={h.setBonificaciones} />
+            <InputField label="Comisiones" value={h.comisiones} onChange={h.setComisiones} />
+            <InputField label="Descuentos" value={h.descuentosLegales} onChange={h.setDescuentosLegales} />
           </div>
 
-          {/* DESCUENTOS */}
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">
-              Descuentos legales
-            </label>
-
-            <input
-              type="number"
-              className={`${inputS} ${!editable ? 'opacity-60 cursor-not-allowed' : ''}`}
-              placeholder="0"
-              value={h.descuentosLegales}
-              onChange={(e) =>
-                h.setDescuentosLegales(Number(e.target.value))
-              }
-              disabled={!editable}
-            />
-          </div>
-
-          {/* BUTTONS */}
-          <div className="flex gap-3 pt-2">
-
+          <div className="flex gap-3 pt-4">
+            <button onClick={onClose} className="flex-1 py-4 rounded-2xl bg-white/5 text-white font-bold hover:bg-white/10 transition">Cerrar</button>
             <button
-              onClick={cerrarPanel}
-              className="
-                flex-1
-                py-3
-                rounded-2xl
-                bg-white/5
-                hover:bg-white/10
-                transition
-                font-bold
-              "
-            >
-              Cancelar
-            </button>
-
-            <button
-              onClick={() => {
-                if (editable) {
-                  h.agregarDetalle();
-                  onClose();
-                }
-              }}
+              onClick={() => { if (editable) { h.agregarDetalle(); onClose(); } }}
               disabled={!editable}
-              className={`
-                flex-1
-                py-3
-                rounded-2xl
-                bg-emerald-400
-                hover:bg-emerald-300
-                transition
-                text-black
-                font-black
-                ${!editable ? 'opacity-60 cursor-not-allowed' : ''}
-              `}
+              className="flex-[2] py-4 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-black font-black transition disabled:opacity-30 active:scale-95 shadow-lg"
             >
-              Guardar
+              Guardar en Nómina
             </button>
-
           </div>
         </div>
       </div>

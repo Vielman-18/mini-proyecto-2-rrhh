@@ -33,11 +33,39 @@ export function useNomina() {
   const [estadoActual, setEstadoActual] = useState<string>('');
   const [departamentoId, setDepartamentoId] = useState('');
 
+  // Modal de confirmación para agregar empleados masivamente
+  const [confirmacionOpen, setConfirmacionOpen] = useState(false);
+  const [confirmacionTitulo, setConfirmacionTitulo] = useState('');
+  const [confirmacionMensaje, setConfirmacionMensaje] = useState('');
+  const [confirmacionAccion, setConfirmacionAccion] = useState<(() => Promise<void>) | null>(null);
+
   const normalizeEstadoNomina = (estado?: string) => {
     if (!estado || estado === 'abierta') return 'activa';
     if (estado === 'inactiva') return 'procesada';
     return estado;
   };
+
+
+const solicitarEliminarEmpleado = (empleadoId: number) => {
+  if (!isNominaActiva(estadoActual)) {
+    toast.error('Solo se pueden eliminar empleados de nóminas activas');
+    return;
+  }
+
+  if (!nominaId) {
+    toast.error('Selecciona una nómina');
+    return;
+  }
+
+  setConfirmacionTitulo('Eliminar empleado');
+  setConfirmacionMensaje('¿Deseas remover este empleado de la nómina?');
+
+  setConfirmacionAccion(() => async () => {
+    await eliminarEmpleadoDeNomina(empleadoId);
+  });
+
+  setConfirmacionOpen(true);
+};
 
   const isNominaActiva = (estado?: string) =>
     normalizeEstadoNomina(estado) === 'activa';
@@ -257,53 +285,53 @@ const generarPdfEmpleado = async (detalleId: number) => {
   }, []);
 
 const crearNomina = async (): Promise<boolean> => {
-  const periodoValue =
-    tipoPeriodo === 'quincenal'
-      ? `${mes}${anio}${quincena}`
-      : `${mes}${anio}`;
-
-  if (!periodoValue) {
-    toast.error('Selecciona el periodo de la nómina');
-    return false;
-  }
-
   try {
     setLoading(true);
 
-    const res = await api.post('/nomina', {
-      tipo_periodo: tipoPeriodo,
-      periodo: periodoValue,
-      estado: 'activa',
-    });
+    // Definimos qué periodos vamos a crear
+    const periodosACrear = tipoPeriodo === 'quincenal' 
+      ? [`${mes}${anio}Q1`, `${mes}${anio}Q2`] 
+      : [`${mes}${anio}`];
 
-    const data = Array.isArray(res.data) ? res.data : [res.data];
+    let ultimaNominaId = '';
 
-    if (!data || data.length === 0) {
-      toast.error('No se creó la nómina');
-      return true;
+    // Ejecutamos las peticiones secuencialmente
+    for (const p of periodosACrear) {
+      const res = await api.post('/nomina', {
+        tipo_periodo: tipoPeriodo,
+        periodo: p,
+        estado: 'activa',
+      });
+
+      const data = Array.isArray(res.data) ? res.data : [res.data];
+      if (data && data.length > 0) {
+        ultimaNominaId = String(data[data.length - 1]?.id || data[0]?.id);
+      }
     }
 
-    const nominaSeleccionada = String(
-      data[data.length - 1]?.id || data[0]?.id
-    );
+    if (!ultimaNominaId) {
+      toast.error('No se pudo crear la nómina');
+      return false;
+    }
 
-    setNominaId(nominaSeleccionada);
+    // Limpieza de estados
+    setNominaId(ultimaNominaId);
     setMes('mayo');
     setAnio('2026');
-    setQuincena('Q1');
+    setQuincena('Q1'); // Reset por defecto
 
     toast.success(
-      data.length > 1
-        ? `Se generaron ${data.length} nóminas`
-        : 'Nómina generada'
+      tipoPeriodo === 'quincenal'
+        ? `Se generaron Q1 y Q2 para ${mes} ${anio}`
+        : 'Nómina generada con éxito'
     );
 
     await cargarDatos();
-    await cargarDetalles(nominaSeleccionada);
+    await cargarDetalles(ultimaNominaId);
     return true;
   } catch (error) {
     console.error(error);
-    toast.error('Error al crear nómina');
+    toast.error('Error al crear el periodo de nómina');
     return false;
   } finally {
     setLoading(false);
@@ -375,56 +403,95 @@ const formatDate = (date: string) => {
     year: 'numeric',
   }).format(d);
 };
+  const obtenerConteoEmpleadosTodos = () => {
+    const empleadosActivos = empleados.filter((e) => e.estado === 'activo');
+    const idsEnNomina = new Set(detalles.map((d) => d.empleado_id));
+    return empleadosActivos.filter((e) => !idsEnNomina.has(e.id)).length;
+  };
+
+  const ejecutarAgregarTodos = async () => {
+    try {
+      setLoading(true);
+      const res = await api.post(`/nomina/${nominaId}/agregar-todos`);
+      toast.success(`Se agregaron ${res.data.total_agregados} empleados`);
+      await cargarDetalles(nominaId);
+      setConfirmacionOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al agregar empleados');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const agregarTodosEmpleados = async () => {
-  if (!isNominaActiva(estadoActual)) {
-    toast.error('Solo se pueden agregar empleados a nóminas ACTIVA.');
-    return;
-  }
+    if (!isNominaActiva(estadoActual)) {
+      toast.error('Solo se pueden agregar empleados a nóminas ACTIVA.');
+      return;
+    }
 
-  if (!nominaId) {
-    toast.error('Selecciona una nómina');
-    return;
-  }
+    if (!nominaId) {
+      toast.error('Selecciona una nómina');
+      return;
+    }
 
-  try {
-    setLoading(true);
+    const conteo = obtenerConteoEmpleadosTodos();
+    
+    if (conteo === 0) {
+      toast.error('No hay empleados disponibles para agregar');
+      return;
+    }
 
-    const res = await api.post(`/nomina/${nominaId}/agregar-todos`);
+    setConfirmacionTitulo('Agregar Todos los Empleados');
+    setConfirmacionMensaje(`¿Estás seguro que deseas agregar ${conteo} empleado${conteo !== 1 ? 's' : ''} a esta nómina?`);
+    setConfirmacionAccion(() => ejecutarAgregarTodos);
+    setConfirmacionOpen(true);
+  };
 
-    toast.success(`Se agregaron ${res.data.total_agregados} empleados`);
+  const obtenerConteoEmpleadosPorDepartamento = (deptId: number) => {
+    const empleadosDelDept = empleados.filter(
+      (e) => e.estado === 'activo' && e.departamento_id === deptId
+    );
+    const idsEnNomina = new Set(detalles.map((d) => d.empleado_id));
+    return empleadosDelDept.filter((e) => !idsEnNomina.has(e.id)).length;
+  };
 
-    await cargarDetalles(nominaId);
-  } catch (error) {
-    console.error(error);
-    toast.error('Error al agregar empleados');
-  } finally {
-    setLoading(false);
-  }
-};
+  const ejecutarAgregarPorDepartamento = async (deptId: number) => {
+    try {
+      setLoading(true);
+      const res = await api.post(`/nomina/${nominaId}/departamento/${deptId}`);
+      toast.success(`Se agregaron ${res.data.total_agregados} empleados`);
+      await cargarDetalles(nominaId);
+      setConfirmacionOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al agregar empleados');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const agregarEmpleadosPorDepartamento = async (departamentoId: number) => {
-  if (!isNominaActiva(estadoActual)) {
-    toast.error('Solo se pueden agregar empleados a nóminas ACTIVA.');
-    return;
-  }
+  const agregarEmpleadosPorDepartamento = async (departamentoId: number) => {
+    if (!isNominaActiva(estadoActual)) {
+      toast.error('Solo se pueden agregar empleados a nóminas ACTIVA.');
+      return;
+    }
 
-  try {
-    setLoading(true);
+    const conteo = obtenerConteoEmpleadosPorDepartamento(departamentoId);
+    const deptNombre = departamentos.find((d) => d.id === departamentoId)?.nombre || 'Departamento';
+    
+    if (conteo === 0) {
+      toast.error('No hay empleados disponibles en este departamento para agregar');
+      return;
+    }
 
-    const res = await api.post(`/nomina/${nominaId}/departamento/${departamentoId}`);
+    setConfirmacionTitulo(`Agregar Empleados de ${deptNombre}`);
+    setConfirmacionMensaje(`¿Estás seguro que deseas agregar ${conteo} empleado${conteo !== 1 ? 's' : ''} del departamento ${deptNombre} a esta nómina?`);
+    setConfirmacionAccion(() => async () => await ejecutarAgregarPorDepartamento(departamentoId));
+    setConfirmacionOpen(true);
+  };
 
-    toast.success(`Se agregaron ${res.data.total_agregados} empleados`);
-
-    await cargarDetalles(nominaId);
-  } catch (error) {
-    console.error(error);
-    toast.error('Error al agregar empleados');
-  } finally {
-    setLoading(false);
-  }
-};
-
-const eliminarNomina = async (id: number) => {
+const solicitarEliminarNomina = (id: number) => {
   const nomina = nominas.find((n) => n.id === id);
 
   if (nomina && !isNominaActiva(nomina.estado)) {
@@ -432,8 +499,18 @@ const eliminarNomina = async (id: number) => {
     return;
   }
 
-  if (!confirm('¿Deseas eliminar esta nómina?')) return;
+  const periodo = nomina?.periodo || `Nómina #${id}`;
+  setConfirmacionTitulo('Eliminar Nómina');
+  setConfirmacionMensaje(`¿Estás seguro que deseas eliminar la nómina de ${periodo}? Esta acción no se puede deshacer.`);
 
+  setConfirmacionAccion(() => async () => {
+    await eliminarNomina(id);
+  });
+
+  setConfirmacionOpen(true);
+};
+
+const eliminarNomina = async (id: number) => {
   try {
     setLoading(true);
     await api.delete(`/nomina/${id}/delete`);
@@ -442,6 +519,7 @@ const eliminarNomina = async (id: number) => {
       setNominaId('');
     }
     await cargarDatos();
+    setConfirmacionOpen(false);
   } catch (error) {
     console.error(error);
     toast.error('Error al eliminar la nómina');
@@ -484,7 +562,7 @@ const eliminarNomina = async (id: number) => {
     setDescuentosLegales,
 
     departamentoId,
-setDepartamentoId,
+    setDepartamentoId,
 
     loading,
 
@@ -493,6 +571,8 @@ setDepartamentoId,
     cargarDetalles,
     cambiarEstado,
     eliminarNomina,
+    solicitarEliminarNomina,
+    solicitarEliminarEmpleado,
 
     estadoActual,
     setEstadoActual,
@@ -504,5 +584,12 @@ setDepartamentoId,
     agregarTodosEmpleados,
     agregarEmpleadosPorDepartamento,
     departamentos,
+
+    // Modal de confirmación
+    confirmacionOpen,
+    setConfirmacionOpen,
+    confirmacionTitulo,
+    confirmacionMensaje,
+    confirmacionAccion,
   };
 }
