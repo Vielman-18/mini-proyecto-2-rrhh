@@ -2,9 +2,9 @@ import { IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum EstadoNomina {
-  abierta = 'abierta',
-  cerrada = 'cerrada',
-  inactiva = 'inactiva',
+  ACTIVA = 'activa',
+  CERRADA = 'cerrada',
+  PROCESADA = 'procesada',
 }
 
 export class CambiarEstadoDto {

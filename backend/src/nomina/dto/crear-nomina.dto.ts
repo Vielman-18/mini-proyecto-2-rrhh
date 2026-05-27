@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { EstadoNomina } from './cambiar-estado.dto';
 
 export enum TipoPeriodo {
   MENSUAL = 'mensual',
@@ -33,12 +34,15 @@ export class CrearNominaDto {
   fecha_fin?: Date;
 
   @ApiPropertyOptional({
-    example: 'abierta',
+    example: 'activa',
+    enum: EstadoNomina,
     description: 'Estado de la nómina',
   })
   @IsOptional()
-  @IsString()
-  estado?: string;
+  @IsEnum(EstadoNomina, {
+    message: 'Estado inválido',
+  })
+  estado?: EstadoNomina;
 
   @ApiPropertyOptional({
     example: 'mayo2026',

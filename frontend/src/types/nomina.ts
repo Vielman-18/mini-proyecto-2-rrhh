@@ -6,6 +6,8 @@ export type Empleado = {
   estado: string;
   cargo?: string;
   departamento?: string;
+  departamento_id?: number;
+  puesto_id?: number;
 };
 
 export type Nomina = {
@@ -14,7 +16,7 @@ export type Nomina = {
   periodo: string;
   fecha_inicio: string;
   fecha_fin: string;
-  estado: string;
+  estado: 'activa' | 'cerrada' | 'procesada' | string;
 };
 
 export type DetalleNomina = {

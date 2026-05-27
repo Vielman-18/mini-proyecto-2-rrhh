@@ -1,9 +1,60 @@
+import React from 'react';
+
 export const quetzal = (v: any) =>
   `Q${Number(v || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
 
 const inputS =
   "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-cyan-400 outline-none transition-all placeholder:text-slate-600 text-sm";
 
+/**
+ * MODAL DE CONFIRMACIÓN
+ */
+export function ModalConfirmacionAction({
+  isOpen,
+  onClose,
+  onConfirm,
+  titulo,
+  mensaje,
+  loading
+}: any) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-sm bg-[#0b1017] rounded-2xl p-6 border border-white/10">
+
+        <h3 className="text-xl font-bold text-white mb-3">
+          {titulo || 'Confirmación'}
+        </h3>
+
+        <p className="text-slate-400 text-sm mb-6">
+          {mensaje}
+        </p>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition"
+          >
+            Cancelar
+          </button>
+
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 py-3 rounded-xl bg-cyan-400 text-black font-bold hover:bg-cyan-300 transition disabled:opacity-50"
+          >
+            {loading ? 'Procesando...' : 'Aceptar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * MODAL PERIODO
+ */
 export function ModalPeriodo({ isOpen, onClose, h }: any) {
   if (!isOpen) return null;
 
@@ -17,132 +68,56 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
   ];
 
   const mesesFiltrados = meses.filter((_, index) => index >= currentMonth);
-
-  const años = Array.from({ length: 5 }, (_, i) =>
-    String(currentYear + i)
-  );
+  const años = Array.from({ length: 5 }, (_, i) => String(currentYear + i));
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
+      <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-8">
 
-      <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl">
+        <h2 className="text-3xl font-black text-white mb-6">
+          Crear Nómina
+        </h2>
 
-        {/* HEADER */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-black text-white">
-            Crear Nómina
-          </h2>
-          <p className="text-slate-400 text-sm">
-            Selecciona el periodo de cálculo
-          </p>
-        </div>
-
-        {/* TIPO PERIODO */}
         <div className="grid grid-cols-2 gap-3 mb-6">
-          <button
-            onClick={() => h.setTipoPeriodo('mensual')}
-            className={`py-3 rounded-xl font-black transition ${
-              h.tipoPeriodo === 'mensual'
-                ? 'bg-cyan-400 text-black'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
+          {['mensual', 'quincenal'].map((tipo) => (
+            <button
+              key={tipo}
+              onClick={() => h.setTipoPeriodo(tipo)}
+              className={`py-4 rounded-2xl font-black capitalize ${
+                h.tipoPeriodo === tipo
+                  ? 'bg-cyan-400 text-black'
+                  : 'bg-white/5 text-white'
+              }`}
+            >
+              {tipo}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <select
+            className={inputS}
+            value={h.mes}
+            onChange={(e) => h.setMes(e.target.value)}
           >
-            Mensual
-          </button>
+            {mesesFiltrados.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
 
-          <button
-            onClick={() => h.setTipoPeriodo('quincenal')}
-            className={`py-3 rounded-xl font-black transition ${
-              h.tipoPeriodo === 'quincenal'
-                ? 'bg-cyan-400 text-black'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
+          <select
+            className={inputS}
+            value={h.anio}
+            onChange={(e) => h.setAnio(e.target.value)}
           >
-            Quincenal
-          </button>
+            {años.map((a) => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
         </div>
 
-        {/* SELECT MES + AÑO */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-
-          {/* MES */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-2">
-              Mes
-            </label>
-
-            <select
-              className={inputS}
-              value={h.mes}
-              onChange={(e) => h.setMes(e.target.value)}
-            >
-              {mesesFiltrados.map((mes) => (
-                <option key={mes} value={mes}>
-                  {mes}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* AÑO */}
-          <div>
-            <label className="block text-xs text-slate-400 mb-2">
-              Año
-            </label>
-
-            <select
-              className={inputS}
-              value={h.anio}
-              onChange={(e) => h.setAnio(e.target.value)}
-            >
-              {años.map((anio) => (
-                <option key={anio} value={anio}>
-                  {anio}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* QUINCENA */}
-        {h.tipoPeriodo === 'quincenal' && (
-          <div className="mb-6">
-            <label className="block text-xs text-slate-400 mb-2">
-              Quincena
-            </label>
-
-            <select
-              className={inputS}
-              value={h.quincena}
-              onChange={(e) =>
-                h.setQuincena(e.target.value as 'Q1' | 'Q2')
-              }
-            >
-              <option value="Q1">Primera (1 - 15)</option>
-              <option value="Q2">Segunda (16 - fin)</option>
-            </select>
-          </div>
-        )}
-
-        {/* PREVIEW */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-6">
-          <p className="text-xs text-slate-400">
-            Periodo generado
-          </p>
-
-          <p className="text-sm font-bold text-white mt-1">
-            {h.tipoPeriodo === 'quincenal'
-              ? `${h.mes} ${h.anio} ${h.quincena}`
-              : `${h.mes} ${h.anio}`}
-          </p>
-        </div>
-
-        {/* ACTIONS */}
         <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 rounded-xl bg-white/10 text-white hover:bg-white/20 transition"
-          >
+          <button onClick={onClose} className="flex-1 py-3 bg-white/10 rounded-xl text-white">
             Cancelar
           </button>
 
@@ -151,455 +126,236 @@ export function ModalPeriodo({ isOpen, onClose, h }: any) {
               const ok = await h.crearNomina();
               if (ok) onClose();
             }}
-            className="flex-1 py-3 rounded-xl bg-cyan-400 text-black font-black hover:bg-cyan-300 transition"
+            className="flex-1 py-3 bg-cyan-400 rounded-xl text-black font-bold"
           >
-            Crear
+            Generar
           </button>
         </div>
-
       </div>
     </div>
   );
 }
 
-export function ModalDetalleEmpleado({
-  isOpen,
-  onClose,
-  detalle,
-  h,
-}: any) {
+/**
+ * MODAL DETALLE EMPLEADO (CON EDICIÓN SOLO EN NOMINA ACTIVA)
+ */
+export function ModalDetalleEmpleado({ isOpen, onClose, detalle, h }: any) {
   if (!isOpen || !detalle) return null;
 
-  return (
-    <div
-      className="
-        fixed inset-0 z-[200]
-        flex items-center justify-center
-        bg-black/70 backdrop-blur-sm
-        p-4
-      "
-    >
-      <div
-        className="
-          w-full max-w-2xl
-          bg-[#0b1017]
-          border border-white/10
-          rounded-3xl
-          overflow-hidden
-        "
-      >
-        {/* HEADER */}
-        <div
-          className="
-            flex items-center justify-between
-            px-6 py-5
-            border-b border-white/10
-          "
-        >
-          <div>
-            <h2 className="text-2xl font-black text-white">
-              Detalle de Pago
-            </h2>
+  const isEditable = h.estadoActual === 'activa';
+  const [editMode, setEditMode] = React.useState(false);
 
-            <p className="text-slate-400 text-sm mt-1">
-              Información completa del empleado
-            </p>
-          </div>
+  const [form, setForm] = React.useState({
+    horas_extra: 0,
+    bonificaciones: 0,
+    comisiones: 0,
+    deducciones: 0 
+  });
 
-          <button
-            onClick={onClose}
-            className="
-              w-10 h-10
-              rounded-xl
-              bg-white/5
-              hover:bg-white/10
-              transition
-              text-slate-300
-              font-bold
-            "
-          >
-            ✕
-          </button>
-        </div>
+  React.useEffect(() => {
+    setForm({
+      horas_extra: Number(detalle.horas_extra ?? 0),
+      bonificaciones: Number(detalle.bonificaciones ?? 0),
+      comisiones: Number(detalle.comisiones ?? 0),
+      deducciones: Number(detalle.descuentos_legales ?? 0) 
+    });
+    setEditMode(false);
+  }, [detalle]);
 
-        {/* BODY */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+  const setField = (field: string, value: number) => {
+    setForm(prev => ({
+      ...prev,
+      [field]: isNaN(value) ? 0 : value
+    }));
+  };
 
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">Empleado</p>
+ 
+  const IGSS_RATE = 0.0483;
+  const salarioBase = Number(detalle.salario_base || 0);
+  
+  const IGSS = salarioBase * IGSS_RATE;
+  const BONO_BASE = 250;
 
-            <h3 className="font-bold mt-1">
-              {detalle.empleados?.nombres}{' '}
-              {detalle.empleados?.apellidos}
-            </h3>
-          </div>
+  const bonificacionesTotal = BONO_BASE + Number(form.bonificaciones);
+  const totalDeducciones = IGSS + Number(form.deducciones);
 
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">ID Empleado</p>
+  const guardar = async () => {
+    if (!isEditable) return;
+    
+    const payload = {
+      horas_extra: Number(form.horas_extra),
+      bonificaciones: Number(form.bonificaciones),
+      comisiones: Number(form.comisiones),
+      descuentos_legales: Number(form.deducciones) // Enviamos como descuentos_legales
+    };
 
-            <h3 className="font-bold mt-1">
-              #{detalle.empleados?.id}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">Salario Base</p>
-
-            <h3 className="font-bold mt-1 text-cyan-400">
-              {quetzal(detalle.salario_base)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Horas No Trabajadas
-            </p>
-
-            <h3 className="font-bold mt-1">
-              {detalle.horas_trabajadas}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">Horas Extra</p>
-
-            <h3 className="font-bold mt-1">
-              {detalle.horas_extra}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Bonificaciones
-            </p>
-
-            <h3 className="font-bold mt-1 text-emerald-400">
-              {quetzal(detalle.bonificaciones)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Comisiones
-            </p>
-
-            <h3 className="font-bold mt-1 text-emerald-400">
-              {quetzal(detalle.comisiones)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Deducciones
-            </p>
-
-            <h3 className="font-bold mt-1 text-red-400">
-              {quetzal(detalle.deducciones)}
-            </h3>
-          </div>
-
-          <div className="bg-[#05070a] rounded-2xl p-4">
-            <p className="text-slate-400 text-sm">
-              Descuentos Legales
-            </p>
-
-            <h3 className="font-bold mt-1 text-red-400">
-              {quetzal(detalle.descuentos_legales)}
-            </h3>
-          </div>
-
-          <div
-            className="
-              bg-cyan-400/10
-              border border-cyan-400/20
-              rounded-2xl
-              p-4
-            "
-          >
-            <p className="text-cyan-300 text-sm">
-              Salario Final
-            </p>
-
-            <h3 className="text-3xl font-black text-cyan-400 mt-1">
-              {quetzal(detalle.salario_final)}
-            </h3>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <div className="px-6 pb-6 flex gap-3">
-
-          <button
-            onClick={() =>
-              h.generarPdfEmpleado(detalle.id)
-            }
-            className="
-              flex-1
-              py-3
-              rounded-2xl
-              bg-emerald-400
-              hover:bg-emerald-300
-              transition
-              text-black
-              font-black
-            "
-          >
-            Descargar Recibo
-          </button>
-
-                  <button
-          onClick={() => h.eliminarEmpleadoDeNomina(detalle.empleados.id)}
-          className="
-            flex-1
-            py-3
-            rounded-2xl
-            bg-red-500
-            hover:bg-red-400
-            transition
-            text-black
-            font-black
-          "
-        >
-          Quitar de nómina
-        </button>
-
-          <button
-            onClick={onClose}
-            className="
-              flex-1
-              py-3
-              rounded-2xl
-              bg-white
-              hover:bg-slate-200
-              transition
-              text-black
-              font-black
-            "
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-export function DrawerEmpleado({ isOpen, onClose, h }: any) {
-  if (!isOpen) return null;
-
-  const cerrarPanel = () => {
-    const confirmar = window.confirm(
-      'Si sales no se guardarán los cambios'
-    );
-
-    if (confirmar) {
+    const ok = await h.actualizarEmpleadoNomina(detalle.id, payload);
+    
+    if (ok) {
+      setEditMode(false);
       onClose();
     }
   };
 
-  const empleado = h.empleados.find(
-    (e: any) => String(e.id) === h.empleadoId
+  const Card = ({ label, value, color }: any) => (
+    <div className="bg-[#05070a] border border-white/5 rounded-xl p-3">
+      <p className="text-[10px] text-slate-500 font-bold uppercase">{label}</p>
+      <p className={`text-sm font-black mt-1 ${color}`}>{value}</p>
+    </div>
   );
 
   return (
-    <div className="
-      fixed inset-0 z-[100]
-      flex items-center justify-center
-      bg-black/70 backdrop-blur-sm
-      p-4
-    ">
-
-      <div className="
-        w-full max-w-[520px]
-        bg-[#0b1017]
-        border border-white/10
-        rounded-3xl
-        overflow-hidden
-        shadow-2xl
-      ">
-
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-3">
+      <div className="w-full max-w-2xl bg-[#0b1017] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        
         {/* HEADER */}
-        <div className="
-          flex items-center justify-between
-          px-6 py-5
-          border-b border-white/10
-        ">
-
+        <div className="flex justify-between items-center px-5 py-4 border-b border-white/5">
           <div>
-            <h2 className="text-2xl font-black text-white">
-              Agregar empleado
-            </h2>
-
-            <p className="text-slate-400 text-sm mt-1">
-              Completa los datos de nómina
+            <h2 className="text-xl font-black text-white">Detalle de Pago</h2>
+            <p className="text-cyan-400 text-xs font-bold uppercase tracking-wider">
+              {detalle.empleados?.nombres} {detalle.empleados?.apellidos}
             </p>
           </div>
-
-          <button
-            onClick={cerrarPanel}
-            className="
-              w-10 h-10
-              rounded-xl
-              bg-white/5
-              hover:bg-red-500/20
-              hover:text-red-400
-              transition
-              text-slate-300
-              font-bold
-            "
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors text-2xl">×</button>
         </div>
 
         {/* BODY */}
-        <div className="p-6 space-y-5">
+        <div className="p-5">
+          {!editMode ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Card label="Salario Base" value={quetzal(salarioBase)} color="text-cyan-400" />
+              <Card label="Horas Extra" value={form.horas_extra} color="text-white" />
+              <Card label="IGSS (4.83%)" value={quetzal(IGSS)} color="text-yellow-400" />
+              <Card label="Otras Deducciones" value={quetzal(form.deducciones)} color="text-rose-400" />
+              
+              <div className="col-span-2 bg-cyan-400/10 border border-cyan-400/20 rounded-xl p-4 mt-2">
+                <p className="text-cyan-300 text-[10px] font-bold uppercase">Bonificación Total (+Ley Q250)</p>
+                <p className="text-xl font-black text-cyan-400">{quetzal(bonificacionesTotal)}</p>
+              </div>
 
-          {/* EMPLEADO */}
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">
-              Empleado
-            </label>
+              <div className="col-span-2 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                <p className="text-red-300 text-[10px] font-bold uppercase">Total Deducciones (IGSS + Otros)</p>
+                <p className="text-xl font-black text-red-400">{quetzal(totalDeducciones)}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {/* Edición de Valores */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Horas Extra (Cantidad)</label>
+                <input type="number" className={inputS} value={form.horas_extra} onChange={(e) => setField("horas_extra", Number(e.target.value))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Bonif. Extra</label>
+                <input type="number" className={inputS} value={form.bonificaciones} onChange={(e) => setField("bonificaciones", Number(e.target.value))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Comisiones</label>
+                <input type="number" className={inputS} value={form.comisiones} onChange={(e) => setField("comisiones", Number(e.target.value))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-rose-400 font-bold uppercase ml-1">Otras Deducciones</label>
+                <input type="number" className={`${inputS} border-rose-500/30`} value={form.deducciones} onChange={(e) => setField("deducciones", Number(e.target.value))} />
+              </div>
 
-            <select
-              className={inputS}
-              value={h.empleadoId}
-              onChange={(e) => h.setEmpleadoId(e.target.value)}
-            >
-              <option value="">Selecciona un empleado</option>
-
-              {h.empleados.map((e: any) => (
-                <option key={e.id} value={e.id}>
-                  {e.nombres} {e.apellidos}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* RESUMEN */}
-          {empleado && (
-            <div className="
-              bg-[#05070a]
-              border border-white/10
-              rounded-2xl
-              p-4
-            ">
-              <p className="text-slate-400 text-sm mb-2">
-                Salario base
-              </p>
-
-              <h3 className="text-2xl font-black text-cyan-400">
-                Q {Number(empleado.salario || 0).toFixed(2)}
-              </h3>
+              <div className="col-span-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 mt-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] text-red-300 font-bold uppercase">Previsualización de Descuentos</p>
+                  <p className="text-lg font-black text-red-400">{quetzal(totalDeducciones)}</p>
+                </div>
+              </div>
             </div>
           )}
-
-          {/* CAMPOS */}
-          <div className="grid grid-cols-2 gap-4">
-
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Horas extra
-              </label>
-
-              <input
-                type="number"
-                className={inputS}
-                placeholder="0"
-                value={h.horasExtra}
-                onChange={(e) =>
-                  h.setHorasExtra(Number(e.target.value))
-                }
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Bonificaciones
-              </label>
-
-              <input
-                type="number"
-                className={inputS}
-                placeholder="0"
-                value={h.bonificaciones}
-                onChange={(e) =>
-                  h.setBonificaciones(Number(e.target.value))
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm text-slate-400 mb-2">
-                Comisiones
-              </label>
-
-              <input
-                type="number"
-                className={inputS}
-                placeholder="0"
-                value={h.comisiones}
-                onChange={(e) =>
-                  h.setComisiones(Number(e.target.value))
-                }
-              />
-            </div>
-          </div>
-
-          {/* DESCUENTOS */}
-          <div>
-            <label className="block text-sm text-slate-400 mb-2">
-              Descuentos legales
-            </label>
-
-            <input
-              type="number"
-              className={inputS}
-              placeholder="0"
-              value={h.descuentosLegales}
-              onChange={(e) =>
-                h.setDescuentosLegales(Number(e.target.value))
-              }
-            />
-          </div>
-
-          {/* BUTTONS */}
-          <div className="flex gap-3 pt-2">
-
-            <button
-              onClick={cerrarPanel}
-              className="
-                flex-1
-                py-3
-                rounded-2xl
-                bg-white/5
-                hover:bg-white/10
-                transition
-                font-bold
-              "
-            >
-              Cancelar
-            </button>
-
-            <button
-              onClick={() => {
-                h.agregarDetalle();
-                onClose();
-              }}
-              className="
-                flex-1
-                py-3
-                rounded-2xl
-                bg-emerald-400
-                hover:bg-emerald-300
-                transition
-                text-black
-                font-black
-              "
-            >
-              Guardar
-            </button>
-
-          </div>
         </div>
+
+        {/* FOOTER */}
+        <div className="px-5 pb-6 pt-2 flex gap-3">
+          {isEditable && (
+            !editMode ? (
+              <button onClick={() => setEditMode(true)} className="flex-1 py-3 bg-cyan-400 hover:bg-cyan-500 text-black font-black rounded-xl transition-colors">
+                MODIFICAR VALORES
+              </button>
+            ) : (
+              <>
+                <button onClick={() => setEditMode(false)} className="flex-1 py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10">
+                  CANCELAR
+                </button>
+                <button onClick={guardar} className="flex-1 py-3 bg-emerald-400 hover:bg-emerald-500 text-black font-black rounded-xl">
+                  GUARDAR CAMBIOS
+                </button>
+              </>
+            )
+          )}
+          <button onClick={onClose} className="px-6 py-3 bg-white text-black font-black rounded-xl hover:bg-slate-200">
+            CERRAR
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * DRAWER EMPLEADO (SIN CAMBIOS FUNCIONALES)
+ */
+export function DrawerEmpleado({ isOpen, onClose, h }: any) {
+  if (!isOpen) return null;
+
+  const empleado = h.empleados.find((e: any) => String(e.id) === h.empleadoId);
+  const editable = h.estadoActual === 'activa';
+
+  const InputField = ({ label, value, onChange }: any) => (
+    <div>
+      <label className="text-xs text-slate-500 font-bold uppercase">
+        {label}
+      </label>
+      <input
+        type="number"
+        className={`${inputS} ${!editable ? 'opacity-50' : ''}`}
+        value={value}
+        disabled={!editable}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
+
+      <div className="w-full max-w-lg bg-[#0b1017] rounded-2xl border border-white/10">
+
+        <div className="p-6 border-b border-white/5">
+          <h2 className="text-xl font-black text-white">
+            {empleado ? `${empleado.nombres} ${empleado.apellidos}` : 'Empleado'}
+          </h2>
+        </div>
+
+        <div className="p-6 grid grid-cols-2 gap-4">
+
+          <InputField label="Horas Extra" value={h.horasExtra} onChange={h.setHorasExtra} />
+          <InputField label="Bonificaciones" value={h.bonificaciones} onChange={h.setBonificaciones} />
+          <InputField label="Comisiones" value={h.comisiones} onChange={h.setComisiones} />
+          <InputField label="Deducciones" value={h.descuentosLegales} onChange={h.setDescuentosLegales} />
+
+        </div>
+
+        <div className="p-6 flex gap-3">
+          <button onClick={onClose} className="flex-1 bg-white/10 py-3 rounded-xl">
+            Cerrar
+          </button>
+
+          <button
+            disabled={!editable}
+            onClick={() => {
+              if (editable) h.agregarDetalle();
+              onClose();
+            }}
+            className="flex-1 bg-cyan-400 text-black font-bold py-3 rounded-xl"
+          >
+            Guardar
+          </button>
+        </div>
+
       </div>
     </div>
   );
