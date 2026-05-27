@@ -80,6 +80,7 @@ model empleados {
   salario            Decimal              @db.Decimal(10, 2)
   estado             String?              @default("activo") @db.VarChar(20)
   fecha_creacion     DateTime?            @default(now()) @db.Timestamp(6)
+  eliminado          Boolean?             @default(false)
   detalle_nomina     detalle_nomina[]
   documentos         documentos[]
   departamentos      departamentos?       @relation(fields: [departamento_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_empleado_departamento")
