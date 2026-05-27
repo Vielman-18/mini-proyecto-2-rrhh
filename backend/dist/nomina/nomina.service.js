@@ -394,6 +394,53 @@ let NominaService = class NominaService {
             where: { id: detalle.id },
         });
     }
+    async actualizarDetalleNomina(detalleId, dto) {
+        const detalle = await this.prisma.detalle_nomina.findUnique({
+            where: { id: detalleId },
+            include: {
+                empleados: true,
+                nomina: true,
+            },
+        });
+        if (!detalle) {
+            throw new common_1.NotFoundException('Detalle de nómina no encontrado');
+        }
+        this.validarNominaEditable(detalle.nomina);
+        const parametros = await this.prisma.parametros_nomina.findMany({
+            where: { activo: true },
+        });
+        const igssPorcentaje = Number(parametros.find((p) => p.nombre?.toUpperCase() === 'IGSS')?.valor) || 4.83;
+        const irtraPorcentaje = Number(parametros.find((p) => p.nombre?.toUpperCase() === 'IRTRA')?.valor) || 1;
+        const horasExtra = Number(dto.horas_extra ?? detalle.horas_extra ?? 0);
+        const bonificaciones = Number(dto.bonificaciones ?? detalle.bonificaciones ?? 0);
+        const comisiones = Number(dto.comisiones ?? detalle.comisiones ?? 0);
+        const descuentosLegales = Number(dto.descuentos_legales ?? detalle.descuentos_legales ?? 0);
+        const horasTrabajadas = Number(dto.horas_trabajadas ?? detalle.horas_trabajadas ?? 0);
+        const salarioMensual = Number(detalle.empleados.salario);
+        const salarioBase = Number(detalle.salario_base);
+        const valorHora = salarioMensual / 240;
+        const montoHorasExtra = horasExtra * valorHora * 1.5;
+        const ingresoGravable = salarioBase + montoHorasExtra + bonificaciones + comisiones;
+        const igss = ingresoGravable * (igssPorcentaje / 100);
+        const irtra = ingresoGravable * (irtraPorcentaje / 100);
+        const deducciones = descuentosLegales + igss + irtra;
+        const salarioFinal = ingresoGravable - deducciones;
+        return this.prisma.detalle_nomina.update({
+            where: { id: detalleId },
+            data: {
+                horas_trabajadas: horasTrabajadas,
+                horas_extra: horasExtra,
+                monto_horas_extra: montoHorasExtra,
+                bonificaciones,
+                comisiones,
+                descuentos_legales: descuentosLegales,
+                igss,
+                irtra,
+                deducciones,
+                salario_final: salarioFinal,
+            },
+        });
+    }
     async listarNominas() {
         const nominas = await this.prisma.nomina.findMany({
             where: { NOT: { estado: 'eliminada' } },

@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NominaController = void 0;
 const common_1 = require("@nestjs/common");
 const crear_detalle_nomina_dto_1 = require("./dto/crear-detalle-nomina.dto");
+const actualizar_detalle_nomina_dto_1 = require("./dto/actualizar-detalle-nomina.dto");
 const nomina_service_1 = require("./nomina.service");
 const crear_nomina_dto_1 = require("./dto/crear-nomina.dto");
 const cambiar_estado_dto_1 = require("./dto/cambiar-estado.dto");
@@ -31,6 +32,9 @@ let NominaController = class NominaController {
     }
     CrearDetalleNomina(dto) {
         return this.nominaService.crearDetalleNomina(dto);
+    }
+    async actualizarDetalleNomina(detalleId, dto) {
+        return this.nominaService.actualizarDetalleNomina(Number(detalleId), dto);
     }
     async cambiarEstado(id, dto) {
         return this.nominaService.cambiarEstado(Number(id), dto.estado);
@@ -80,6 +84,14 @@ __decorate([
     __metadata("design:paramtypes", [crear_detalle_nomina_dto_1.CrearDetalleNominaDto]),
     __metadata("design:returntype", void 0)
 ], NominaController.prototype, "CrearDetalleNomina", null);
+__decorate([
+    (0, common_1.Put)('detalle/:detalleId'),
+    __param(0, (0, common_1.Param)('detalleId')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, actualizar_detalle_nomina_dto_1.ActualizarDetalleNominaDto]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "actualizarDetalleNomina", null);
 __decorate([
     (0, common_1.Put)(':id/estado'),
     __param(0, (0, common_1.Param)('id')),

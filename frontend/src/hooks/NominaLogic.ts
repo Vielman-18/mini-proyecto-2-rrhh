@@ -103,6 +103,42 @@ const eliminarEmpleadoDeNomina = async (
   }
 };
 
+const actualizarEmpleadoNomina = async (
+  detalleId: number,
+  payload: {
+    horas_trabajadas?: number;
+    horas_extra?: number;
+    bonificaciones?: number;
+    comisiones?: number;
+    deducciones?: number;
+    descuentos_legales?: number;
+  },
+) => {
+  if (!isNominaActiva(estadoActual)) {
+    toast.error('Solo se pueden modificar empleados de nóminas activas');
+    return false;
+  }
+
+  try {
+    setLoading(true);
+
+    await api.put(`/nomina/detalle/${detalleId}`, payload);
+    toast.success('Detalle de nómina actualizado');
+
+    if (nominaId) {
+      await cargarDetalles(nominaId);
+    }
+
+    return true;
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al actualizar el detalle de nómina');
+    return false;
+  } finally {
+    setLoading(false);
+  }
+};
+
  const cargarDetalles = async (id?: string) => {
   try {
     if (!id || isNaN(Number(id))) {
@@ -581,6 +617,7 @@ const eliminarNomina = async (id: number) => {
     generarPdf,
     generarPdfEmpleado,
     eliminarEmpleadoDeNomina,
+    actualizarEmpleadoNomina,
     agregarTodosEmpleados,
     agregarEmpleadosPorDepartamento,
     departamentos,
