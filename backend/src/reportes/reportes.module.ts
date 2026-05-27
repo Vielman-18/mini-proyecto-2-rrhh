@@ -4,9 +4,9 @@ import { ReportesService } from './reportes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NominaPdfService } from './nomina-pdf/nomina-pdf.service';
 
-
 @Module({
-  providers: [NominaPdfService],
-  exports: [NominaPdfService],
+  controllers: [ReportesController],
+  providers: [ReportesService, PrismaService, NominaPdfService],
+  exports: [ReportesService, NominaPdfService],
 })
 export class ReportesModule {}
