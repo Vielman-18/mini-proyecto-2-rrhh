@@ -8,7 +8,6 @@ export default function Login() {
 
   const [correo, setCorreo] = useState('');
   const [contrasena, setContrasena] = useState('');
-  const [rol, setRol] = useState('rrhh');
   const [cargando, setCargando] = useState(false);
 
   const iniciarSesion = async (e: React.FormEvent) => {
@@ -20,11 +19,10 @@ export default function Login() {
       const res = await api.post('/auth/login', {
         correo,
         contrasena,
-        rol,
       });
 
       const token = res.data.access_token || res.data.token;
-      const rolUsuario = (res.data.rol || rol).toLowerCase();
+      const rolUsuario = (res.data.rol || res.data.role || '').toLowerCase();
 
       localStorage.setItem('token', token);
       localStorage.setItem('role', rolUsuario);
@@ -32,9 +30,15 @@ export default function Login() {
 
       toast.success('Inicio de sesión correcto');
 
-      navigate('/home');
+      if (rolUsuario === 'admin') {
+        navigate('/admin');
+      } else if (rolUsuario === 'rrhh') {
+        navigate('/rrhh');
+      } else {
+        navigate('/empleado');
+      }
     } catch {
-      toast.error('Credenciales incorrectas o rol incorrecto');
+      toast.error('Credenciales incorrectas');
     } finally {
       setCargando(false);
     }
@@ -153,21 +157,6 @@ return (
                   placeholder="********"
                   required
                 />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">
-                  Rol
-                </label>
-                <select
-                  value={rol}
-                  onChange={(e) => setRol(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-700/80 bg-black/40 px-4 py-3.5 text-white outline-none transition focus:border-cyan-400 focus:bg-slate-950"
-                >
-                  <option value="rrhh">RRHH</option>
-                  <option value="admin">Admin</option>
-                  <option value="empleado">Empleado</option>
-                </select>
               </div>
 
               <button
