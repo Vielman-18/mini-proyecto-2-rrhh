@@ -15,6 +15,7 @@ export function useNomina() {
   const [detalles, setDetalles] = useState<DetalleNomina[]>([]);
   const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [nominaId, setNominaId] = useState<string>('');
+  
 
   const [empleadoId, setEmpleadoId] = useState('');
   const [tipoPeriodo, setTipoPeriodo] = useState('mensual');
@@ -33,7 +34,8 @@ export function useNomina() {
   const [estadoActual, setEstadoActual] = useState<string>('');
   const [departamentoId, setDepartamentoId] = useState('');
 
-  // Modal de confirmación para agregar empleados masivamente
+const [puestoId, setPuestoId] = useState<string>('');
+const [puestos, setPuestos] = useState<any[]>([]);
   const [confirmacionOpen, setConfirmacionOpen] = useState(false);
   const [confirmacionTitulo, setConfirmacionTitulo] = useState('');
   const [confirmacionMensaje, setConfirmacionMensaje] = useState('');
@@ -137,6 +139,113 @@ const actualizarEmpleadoNomina = async (
   } finally {
     setLoading(false);
   }
+};
+
+const obtenerConteoEmpleadosPorPuesto = (
+  puestoId: number,
+) => {
+
+  const empleadosDelPuesto = empleados.filter(
+    (e: any) =>
+      e.estado === 'activo' &&
+      Number(e.puesto_id) === Number(puestoId)
+  );
+
+  const idsEnNomina = new Set(
+    detalles.map((d) => d.empleado_id)
+  );
+
+  return empleadosDelPuesto.filter(
+    (e) => !idsEnNomina.has(e.id)
+  ).length;
+};
+
+// =========================
+// EJECUTAR AGREGAR POR PUESTO
+// =========================
+
+const ejecutarAgregarPorPuesto = async (
+  puestoId: number,
+) => {
+
+  try {
+
+    setLoading(true);
+
+    const res = await api.post(
+      `/nomina/${nominaId}/puesto/${puestoId}`
+    );
+
+    toast.success(
+      `Se agregaron ${res.data.total_agregados} empleados`
+    );
+
+    await cargarDetalles(nominaId);
+
+    setConfirmacionOpen(false);
+
+  } catch (error) {
+
+    console.error(error);
+
+    toast.error(
+      'Error al agregar empleados por puesto'
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
+
+// =========================
+// MÉTODO PRINCIPAL
+// =========================
+
+const agregarEmpleadosPorPuesto = async (
+  puestoId: number,
+) => {
+
+  if (!isNominaActiva(estadoActual)) {
+    toast.error(
+      'Solo se pueden agregar empleados a nóminas activas'
+    );
+    return;
+  }
+
+  if (!nominaId) {
+    toast.error('Selecciona una nómina');
+    return;
+  }
+
+  const conteo =
+    obtenerConteoEmpleadosPorPuesto(puestoId);
+
+  if (conteo === 0) {
+    toast.error(
+      'No hay empleados disponibles en este puesto'
+    );
+    return;
+  }
+
+  const puestoNombre =
+  `Puesto #${puestoId}`;
+
+  setConfirmacionTitulo(
+    `Agregar empleados de ${puestoNombre}`
+  );
+
+  setConfirmacionMensaje(
+    `¿Deseas agregar ${conteo} empleado${conteo !== 1 ? 's' : ''} del puesto ${puestoNombre}?`
+  );
+
+  setConfirmacionAccion(
+    () => async () =>
+      await ejecutarAgregarPorPuesto(puestoId)
+  );
+
+  setConfirmacionOpen(true);
 };
 
  const cargarDetalles = async (id?: string) => {
@@ -295,10 +404,11 @@ const generarPdfEmpleado = async (detalleId: number) => {
 
   const cargarDatos = async () => {
     try {
-      const [emp, nom, deps] = await Promise.all([
+      const [emp, nom, deps, pues] = await Promise.all([
         api.get('/empleados'),
         api.get('/nomina'),
         api.get('/departamentos'),
+        api.get('/puestos'),
       ]);
 
       const nominasNormalizadas = nom.data.map((nomina: Nomina) => ({
@@ -310,6 +420,7 @@ const generarPdfEmpleado = async (detalleId: number) => {
       setEmpleados(emp.data.filter((e: Empleado) => e.estado === 'activo'));
       setNominas(nominasNormalizadas);
       setDepartamentos(deps.data || []);
+      setPuestos(pues.data || []);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       toast.error('Error al cargar datos');
@@ -324,14 +435,13 @@ const crearNomina = async (): Promise<boolean> => {
   try {
     setLoading(true);
 
-    // Definimos qué periodos vamos a crear
+    
     const periodosACrear = tipoPeriodo === 'quincenal' 
       ? [`${mes}${anio}Q1`, `${mes}${anio}Q2`] 
       : [`${mes}${anio}`];
 
     let ultimaNominaId = '';
 
-    // Ejecutamos las peticiones secuencialmente
     for (const p of periodosACrear) {
       const res = await api.post('/nomina', {
         tipo_periodo: tipoPeriodo,
@@ -354,8 +464,7 @@ const crearNomina = async (): Promise<boolean> => {
     setNominaId(ultimaNominaId);
     setMes('mayo');
     setAnio('2026');
-    setQuincena('Q1'); // Reset por defecto
-
+    setQuincena('Q1'); 
     toast.success(
       tipoPeriodo === 'quincenal'
         ? `Se generaron Q1 y Q2 para ${mes} ${anio}`
@@ -397,7 +506,6 @@ const agregarDetalle = async () => {
     await api.post('/nomina/detalle', {
       nomina_id: Number(nominaId),
       empleado_id: Number(empleadoId),
-
       salario_base: Number(emp?.salario || 0),
       horas_trabajadas: Number(horasTrabajadas),
       horas_extra: Number(horasExtra),
@@ -429,6 +537,77 @@ const agregarDetalle = async () => {
       empleados: detalles.length,
     };
   }, [detalles]);
+
+const detallesProcesados = useMemo(() => {
+  return detalles.map((d: any) => {
+
+    const salarioBase = Number(d.salario_base || 0);
+
+    const valorHorasExtra = Number(
+      d.monto_horas_extra ||
+      d.valor_horas_extra ||
+      0
+    );
+    const BONO_INCENTIVO = 250;
+
+    const bonificaciones = Number(d.bonificaciones || 0);
+
+    const comisiones = Number(d.comisiones || 0);
+
+    const totalExtras =
+      BONO_INCENTIVO +
+      bonificaciones +
+      comisiones +
+      valorHorasExtra;
+
+
+    const IGSS_RATE = 0.0483;
+
+    const igss = salarioBase * IGSS_RATE;
+
+    // DEDUCCIONES MANUALES
+    const descuentosLegales = Number(
+      d.descuentos_legales ||
+      d.deducciones ||
+      0
+    );
+
+    const IRTRA_RATE = 0.01;
+
+    const irtraPatronal =
+      salarioBase * IRTRA_RATE;
+
+  
+    const totalDeducciones =
+      igss +
+      descuentosLegales;
+
+    const salarioFinal =
+      salarioBase +
+      totalExtras -
+      totalDeducciones;
+
+    return {
+      ...d,
+
+      // extras
+      bono_incentivo: BONO_INCENTIVO,
+      valor_horas_extra: valorHorasExtra,
+      total_extras: totalExtras,
+
+      // deducciones
+      igss,
+      descuentos_legales: descuentosLegales,
+      deducciones: totalDeducciones,
+
+      // patronal
+      irtra_patronal: irtraPatronal,
+
+      // final
+      salario_final: salarioFinal,
+    };
+  });
+}, [detalles]);
 
 const formatDate = (date: string) => {
   const d = new Date(date);
@@ -565,6 +744,7 @@ const eliminarNomina = async (id: number) => {
 };
 
   return {
+    puestos,
     empleados,
     nominas,
     detalles,
@@ -628,5 +808,8 @@ const eliminarNomina = async (id: number) => {
     confirmacionTitulo,
     confirmacionMensaje,
     confirmacionAccion,
+    detallesProcesados,
+
+    agregarEmpleadosPorPuesto,
   };
 }

@@ -143,14 +143,13 @@ export function ModalDetalleEmpleado({ isOpen, onClose, detalle, h }: any) {
   if (!isOpen || !detalle) return null;
 
   const isEditable = h.estadoActual === 'activa';
-
   const [editMode, setEditMode] = React.useState(false);
 
   const [form, setForm] = React.useState({
     horas_extra: 0,
     bonificaciones: 0,
     comisiones: 0,
-    deducciones: 0
+    deducciones: 0 
   });
 
   React.useEffect(() => {
@@ -158,7 +157,7 @@ export function ModalDetalleEmpleado({ isOpen, onClose, detalle, h }: any) {
       horas_extra: Number(detalle.horas_extra ?? 0),
       bonificaciones: Number(detalle.bonificaciones ?? 0),
       comisiones: Number(detalle.comisiones ?? 0),
-      deducciones: Number(detalle.deducciones ?? 0)
+      deducciones: Number(detalle.descuentos_legales ?? 0) 
     });
     setEditMode(false);
   }, [detalle]);
@@ -170,25 +169,28 @@ export function ModalDetalleEmpleado({ isOpen, onClose, detalle, h }: any) {
     }));
   };
 
-  // =========================
-  // CÁLCULOS
-  // =========================
-
+ 
   const IGSS_RATE = 0.0483;
-  const IGSS = Number(detalle.salario_base || 0) * IGSS_RATE;
-
+  const salarioBase = Number(detalle.salario_base || 0);
+  
+  const IGSS = salarioBase * IGSS_RATE;
   const BONO_BASE = 250;
-  const bonificacionesTotal = BONO_BASE + Number(form.bonificaciones || 0);
 
-  const deduccionesManual = Number(form.deducciones || 0);
-
-  const totalDeducciones = IGSS + deduccionesManual;
+  const bonificacionesTotal = BONO_BASE + Number(form.bonificaciones);
+  const totalDeducciones = IGSS + Number(form.deducciones);
 
   const guardar = async () => {
     if (!isEditable) return;
+    
+    const payload = {
+      horas_extra: Number(form.horas_extra),
+      bonificaciones: Number(form.bonificaciones),
+      comisiones: Number(form.comisiones),
+      descuentos_legales: Number(form.deducciones) // Enviamos como descuentos_legales
+    };
 
-    const ok = await h.actualizarEmpleadoNomina(detalle.id, form);
-
+    const ok = await h.actualizarEmpleadoNomina(detalle.id, payload);
+    
     if (ok) {
       setEditMode(false);
       onClose();
@@ -204,182 +206,90 @@ export function ModalDetalleEmpleado({ isOpen, onClose, detalle, h }: any) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-md p-3">
-
-      <div className="w-full max-w-2xl bg-[#0b1017] border border-white/10 rounded-3xl overflow-hidden">
-
-        {/* HEADER más compacto */}
+      <div className="w-full max-w-2xl bg-[#0b1017] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        
+        {/* HEADER */}
         <div className="flex justify-between items-center px-5 py-4 border-b border-white/5">
           <div>
-            <h2 className="text-xl font-black text-white">
-              Detalle de Pago
-            </h2>
-            <p className="text-cyan-400 text-xs font-bold">
+            <h2 className="text-xl font-black text-white">Detalle de Pago</h2>
+            <p className="text-cyan-400 text-xs font-bold uppercase tracking-wider">
               {detalle.empleados?.nombres} {detalle.empleados?.apellidos}
             </p>
           </div>
-
-          <button onClick={onClose} className="text-white text-lg">
-            ✕
-          </button>
+          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors text-2xl">×</button>
         </div>
 
         {/* BODY */}
         <div className="p-5">
-
           {!editMode ? (
             <div className="grid grid-cols-2 gap-3">
-
-              <Card label="Salario Base" value={quetzal(detalle.salario_base)} color="text-cyan-400" />
-              <Card label="IGSS" value={quetzal(IGSS)} color="text-yellow-400" />
-
-              <Card label="Bonificaciones Base" value={quetzal(BONO_BASE)} color="text-emerald-400" />
-              <Card label="Bonificaciones Extra" value={quetzal(form.bonificaciones)} color="text-emerald-400" />
-
-              <Card label="Comisiones" value={quetzal(form.comisiones)} color="text-emerald-400" />
-              <Card label="Deducciones" value={quetzal(form.deducciones)} color="text-rose-400" />
-
-              <div className="col-span-2 bg-cyan-400/10 border border-cyan-400/20 rounded-xl p-4">
-                <p className="text-cyan-300 text-[10px] font-bold uppercase">
-                  Bonificación Total (Base + Extras)
-                </p>
-                <p className="text-xl font-black text-cyan-400">
-                  {quetzal(bonificacionesTotal)}
-                </p>
+              <Card label="Salario Base" value={quetzal(salarioBase)} color="text-cyan-400" />
+              <Card label="Horas Extra" value={form.horas_extra} color="text-white" />
+              <Card label="IGSS (4.83%)" value={quetzal(IGSS)} color="text-yellow-400" />
+              <Card label="Otras Deducciones" value={quetzal(form.deducciones)} color="text-rose-400" />
+              
+              <div className="col-span-2 bg-cyan-400/10 border border-cyan-400/20 rounded-xl p-4 mt-2">
+                <p className="text-cyan-300 text-[10px] font-bold uppercase">Bonificación Total (+Ley Q250)</p>
+                <p className="text-xl font-black text-cyan-400">{quetzal(bonificacionesTotal)}</p>
               </div>
 
               <div className="col-span-2 bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-                <p className="text-red-300 text-[10px] font-bold uppercase">
-                  Total Deducciones
-                </p>
-                <p className="text-xl font-black text-red-400">
-                  {quetzal(totalDeducciones)}
-                </p>
+                <p className="text-red-300 text-[10px] font-bold uppercase">Total Deducciones (IGSS + Otros)</p>
+                <p className="text-xl font-black text-red-400">{quetzal(totalDeducciones)}</p>
               </div>
-
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
-
-              <div>
-                <label className="text-[10px] text-slate-500 font-bold uppercase">
-                  Horas Extra
-                </label>
-                <input
-                  type="number"
-                  className={inputS}
-                  value={form.horas_extra}
-                  onChange={(e) => setField("horas_extra", Number(e.target.value))}
-                />
+            <div className="grid grid-cols-2 gap-4">
+              {/* Edición de Valores */}
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Horas Extra (Cantidad)</label>
+                <input type="number" className={inputS} value={form.horas_extra} onChange={(e) => setField("horas_extra", Number(e.target.value))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Bonif. Extra</label>
+                <input type="number" className={inputS} value={form.bonificaciones} onChange={(e) => setField("bonificaciones", Number(e.target.value))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-slate-500 font-bold uppercase ml-1">Comisiones</label>
+                <input type="number" className={inputS} value={form.comisiones} onChange={(e) => setField("comisiones", Number(e.target.value))} />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] text-rose-400 font-bold uppercase ml-1">Otras Deducciones</label>
+                <input type="number" className={`${inputS} border-rose-500/30`} value={form.deducciones} onChange={(e) => setField("deducciones", Number(e.target.value))} />
               </div>
 
-              <div>
-                <label className="text-[10px] text-slate-500 font-bold uppercase">
-                  Bonificaciones Extra
-                </label>
-                <input
-                  type="number"
-                  className={inputS}
-                  value={form.bonificaciones}
-                  onChange={(e) => setField("bonificaciones", Number(e.target.value))}
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] text-slate-500 font-bold uppercase">
-                  Comisiones
-                </label>
-                <input
-                  type="number"
-                  className={inputS}
-                  value={form.comisiones}
-                  onChange={(e) => setField("comisiones", Number(e.target.value))}
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] text-slate-500 font-bold uppercase">
-                  Deducciones
-                </label>
-                <input
-                  type="number"
-                  className={inputS}
-                  value={form.deducciones}
-                  onChange={(e) => setField("deducciones", Number(e.target.value))}
-                />
-              </div>
-
-              {/* resumen lateral */}
-              <div className="col-span-2 grid grid-cols-2 gap-3 mt-1">
-
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
-                  <p className="text-[10px] text-yellow-300 font-bold">IGSS</p>
-                  <p className="text-sm font-black text-yellow-400">
-                    {quetzal(IGSS)}
-                  </p>
+              <div className="col-span-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 mt-2">
+                <div className="flex justify-between items-center">
+                  <p className="text-[10px] text-red-300 font-bold uppercase">Previsualización de Descuentos</p>
+                  <p className="text-lg font-black text-red-400">{quetzal(totalDeducciones)}</p>
                 </div>
-
-                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-                  <p className="text-[10px] text-emerald-300 font-bold">
-                    Bonificación Total
-                  </p>
-                  <p className="text-sm font-black text-emerald-400">
-                    {quetzal(bonificacionesTotal)}
-                  </p>
-                </div>
-
               </div>
-
-              <div className="col-span-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3">
-                <p className="text-[10px] text-red-300 font-bold">
-                  Total Deducciones
-                </p>
-                <p className="text-lg font-black text-red-400">
-                  {quetzal(totalDeducciones)}
-                </p>
-              </div>
-
             </div>
           )}
         </div>
 
-        {/* FOOTER más compacto */}
-        <div className="px-5 pb-4 pt-2 flex gap-2">
-
+        {/* FOOTER */}
+        <div className="px-5 pb-6 pt-2 flex gap-3">
           {isEditable && (
             !editMode ? (
-              <button
-                onClick={() => setEditMode(true)}
-                className="flex-1 py-3 bg-cyan-400 text-black font-black rounded-xl"
-              >
-                Modificar
+              <button onClick={() => setEditMode(true)} className="flex-1 py-3 bg-cyan-400 hover:bg-cyan-500 text-black font-black rounded-xl transition-colors">
+                MODIFICAR VALORES
               </button>
             ) : (
               <>
-                <button
-                  onClick={() => setEditMode(false)}
-                  className="flex-1 py-3 bg-white/10 text-white font-bold rounded-xl"
-                >
-                  Cancelar
+                <button onClick={() => setEditMode(false)} className="flex-1 py-3 bg-white/5 text-white font-bold rounded-xl hover:bg-white/10">
+                  CANCELAR
                 </button>
-
-                <button
-                  onClick={guardar}
-                  className="flex-1 py-3 bg-emerald-400 text-black font-black rounded-xl"
-                >
-                  Guardar
+                <button onClick={guardar} className="flex-1 py-3 bg-emerald-400 hover:bg-emerald-500 text-black font-black rounded-xl">
+                  GUARDAR CAMBIOS
                 </button>
               </>
             )
           )}
-
-          <button
-            onClick={onClose}
-            className="flex-1 py-3 bg-white text-black font-black rounded-xl"
-          >
-            Cerrar
+          <button onClick={onClose} className="px-6 py-3 bg-white text-black font-black rounded-xl hover:bg-slate-200">
+            CERRAR
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -416,7 +326,7 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
 
         <div className="p-6 border-b border-white/5">
           <h2 className="text-xl font-black text-white">
-            Empleado
+            {empleado ? `${empleado.nombres} ${empleado.apellidos}` : 'Empleado'}
           </h2>
         </div>
 

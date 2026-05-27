@@ -16,6 +16,7 @@ export default function Nomina() {
   const [detalleOpen, setDetalleOpen] = useState(false);
   const [detalle, setDetalle] = useState<any>(null);
   
+  const [showPuestoPanel, setShowPuestoPanel] = useState(false);
 
   const [showDeptPanel, setShowDeptPanel] = useState(false);
 
@@ -160,55 +161,100 @@ export default function Nomina() {
             </div>
 
             {/* ACCIONES DE AGREGADO (Panel Refactorizado) */}
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch relative">
+           <div className="flex flex-col sm:flex-row gap-3 items-stretch relative">
+
+  <button
+    onClick={h.agregarTodosEmpleados}
+    disabled={!isNominaEditable || h.loading}
+    className="px-6 py-3 bg-white hover:bg-slate-200 transition text-black font-black rounded-2xl disabled:opacity-50 flex items-center justify-center gap-2"
+  >
+    Agregar todos
+  </button>
+
+  {/* POR DEPARTAMENTO */}
+  <div className="relative">
+    <button
+      onClick={() => setShowDeptPanel(!showDeptPanel)}
+      disabled={!isNominaEditable || h.loading}
+      className={`px-6 py-3 transition font-black rounded-2xl flex items-center justify-center gap-2 border ${
+        showDeptPanel ? 'bg-cyan-400 text-black' : 'bg-[#05070a] text-white border-white/10'
+      } disabled:opacity-50`}
+    >
+      Por departamento
+      <svg className={`w-4 h-4 transition-transform ${showDeptPanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+
+    {showDeptPanel && (
+      <>
+        <div className="fixed inset-0 z-10" onClick={() => setShowDeptPanel(false)} />
+        <div className="absolute top-full right-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden">
+          <div className="p-3 bg-white/5 border-b border-white/5">
+            <p className="text-[10px] font-bold text-slate-500 uppercase">Selecciona área</p>
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            {h.departamentos.map((d: any) => (
               <button
-                onClick={h.agregarTodosEmpleados}
-                disabled={!isNominaEditable || h.loading}
-                className="px-6 py-3 bg-white hover:bg-slate-200 transition text-black font-black rounded-2xl disabled:opacity-50 flex items-center justify-center gap-2"
+                key={d.id}
+                onClick={() => {
+                  h.agregarEmpleadosPorDepartamento(Number(d.id));
+                  setShowDeptPanel(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-cyan-400 hover:text-black transition text-sm font-bold border-b border-white/5 last:border-0"
               >
-                Agregar todos
+                {d.nombre}
               </button>
+            ))}
+          </div>
+        </div>
+      </>
+    )}
+  </div>
 
-              <div className="relative">
-                <button
-                  onClick={() => setShowDeptPanel(!showDeptPanel)}
-                  disabled={!isNominaEditable || h.loading}
-                  className={`px-6 py-3 transition font-black rounded-2xl flex items-center justify-center gap-2 border ${
-                    showDeptPanel ? 'bg-cyan-400 text-black' : 'bg-[#05070a] text-white border-white/10'
-                  } disabled:opacity-50`}
-                >
-                   Por departamento
-                  <svg className={`w-4 h-4 transition-transform ${showDeptPanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+  {/* POR PUESTO (NUEVO) */}
+  <div className="relative">
+    <button
+      onClick={() => setShowPuestoPanel(!showPuestoPanel)}
+      disabled={!isNominaEditable || h.loading}
+      className={`px-6 py-3 transition font-black rounded-2xl flex items-center justify-center gap-2 border ${
+        showPuestoPanel ? 'bg-cyan-400 text-black' : 'bg-[#05070a] text-white border-white/10'
+      } disabled:opacity-50`}
+    >
+      Por puesto
+      <svg className={`w-4 h-4 transition-transform ${showPuestoPanel ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
 
-                {showDeptPanel && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowDeptPanel(false)} />
-                    <div className="absolute top-full right-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden">
-                      <div className="p-3 bg-white/5 border-b border-white/5">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase">Selecciona área</p>
-                      </div>
-                      <div className="max-h-60 overflow-y-auto">
-                        {h.departamentos.map((d: any) => (
-                          <button
-                            key={d.id}
-                            onClick={() => {
-                              h.agregarEmpleadosPorDepartamento(Number(d.id));
-                              setShowDeptPanel(false);
-                            }}
-                            className="w-full text-left px-4 py-3 hover:bg-cyan-400 hover:text-black transition text-sm font-bold border-b border-white/5 last:border-0"
-                          >
-                            {d.nombre}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+    {showPuestoPanel && (
+      <>
+        <div className="fixed inset-0 z-10" onClick={() => setShowPuestoPanel(false)} />
+        <div className="absolute top-full right-0 mt-2 w-64 bg-slate-900 border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden">
+          <div className="p-3 bg-white/5 border-b border-white/5">
+            <p className="text-[10px] font-bold text-slate-500 uppercase">Selecciona puesto</p>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {h.puestos.map((p: any) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  h.agregarEmpleadosPorPuesto(Number(p.id));
+                  setShowPuestoPanel(false);
+                }}
+                className="w-full text-left px-4 py-3 hover:bg-cyan-400 hover:text-black transition text-sm font-bold border-b border-white/5 last:border-0"
+              >
+                {p.nombre}
+              </button>
+            ))}
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+
+</div>
           </div>
 
           {/* KPIs RESUMEN */}
@@ -240,48 +286,113 @@ export default function Nomina() {
           </div>
 
           {/* TABLA DE DETALLES */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="text-slate-400 text-xs uppercase bg-white/5">
-                <tr>
-                  <th className="py-4 px-4">Empleado</th>
-                  <th className="py-4">Salario Base</th>
-                  <th className="py-4">Deducciones</th>
-                  <th className="py-4">Líquido</th>
-                  <th className="py-4 text-right px-4">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {h.detalles.map((d: any) => (
-                  <tr key={d.id} className="hover:bg-white/5 transition">
-                    <td className="py-4 px-4">
-                      <button
-                        onClick={() => { setDetalle(d); setDetalleOpen(true); }}
-                        className="text-cyan-400 font-bold hover:underline"
-                      >
-                        {d.empleados?.nombres} {d.empleados?.apellidos}
-                      </button>
-                    </td>
-                    <td className="py-4">{quetzal(d.salario_base)}</td>
-                    <td className="py-4 text-red-400">{quetzal(d.deducciones)}</td>
-                    <td className="py-4 font-black text-emerald-400">{quetzal(d.salario_final)}</td>
-                    <td className="py-4 text-right px-4">
-                      <button
-                        onClick={() => h.solicitarEliminarEmpleado(d.empleado_id)}
-                        disabled={!isNominaEditable || h.loading}
-                        className="text-slate-500 hover:text-red-500 transition disabled:hidden"
-                      >
-                        Remover
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {h.detalles.length === 0 && (
-              <div className="text-center py-20 text-slate-600">No hay empleados vinculados a esta nómina</div>
-            )}
-          </div>
+   <div className="overflow-x-auto">
+  <table className="w-full text-left">
+    
+    <thead className="text-slate-400 text-xs uppercase bg-white/5">
+      <tr>
+        <th className="py-4 px-4">Empleado</th>
+        <th className="py-4">Salario Base</th>
+        <th className="py-4">Extras Ganados</th>
+        <th className="py-4">Deducciones</th>
+        <th className="py-4">Total</th>
+        <th className="py-4 text-right px-4">Acciones</th>
+      </tr>
+    </thead>
+
+    <tbody className="divide-y divide-white/5">
+      {h.detallesProcesados.map((d: any) => (
+
+        <tr
+          key={d.id}
+          className="hover:bg-white/[0.03] transition"
+        >
+
+          {/* EMPLEADO */}
+          <td className="py-4 px-4">
+            <button
+              onClick={() => {
+                setDetalle(d);
+                setDetalleOpen(true);
+              }}
+              className="text-cyan-400 font-bold hover:text-cyan-300 transition"
+            >
+              {d.empleados?.nombres} {d.empleados?.apellidos}
+            </button>
+          </td>
+
+          {/* SALARIO BASE */}
+          <td className="py-4">
+            <span className="font-semibold text-white">
+              {quetzal(d.salario_base)}
+            </span>
+          </td>
+
+          {/* EXTRAS */}
+          <td className="py-4">
+
+            <div className="flex flex-col">
+
+              <span className="font-black text-emerald-400 text-base">
+                {quetzal(d.total_extras)}
+              </span>
+
+              <span className="text-[11px] text-slate-500 mt-1">
+                Bono 250 + extras
+              </span>
+
+            </div>
+
+          </td>
+
+          {/* DEDUCCIONES */}
+          <td className="py-4">
+
+            <div className="flex flex-col">
+
+              <span className="font-black text-red-400 text-base">
+                {quetzal(d.deducciones)}
+              </span>
+
+              <span className="text-[11px] text-slate-500 mt-1">
+                IGSS + deducciones
+              </span>
+
+            </div>
+
+          </td>
+
+          {/* TOTAL FINAL */}
+          <td className="py-4">
+            <span className="font-black text-cyan-400 text-lg">
+              {quetzal(d.salario_final)}
+            </span>
+          </td>
+
+          {/* ACCIONES */}
+          <td className="py-4 text-right px-4">
+            <button
+              onClick={() => h.solicitarEliminarEmpleado(d.empleado_id)}
+              disabled={!isNominaEditable || h.loading}
+              className="px-3 py-1.5 rounded-xl text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Remover
+            </button>
+          </td>
+
+        </tr>
+
+      ))}
+    </tbody>
+
+  </table>
+
+  {h.detallesProcesados.length === 0 && (
+    <div className="text-center py-20 text-slate-600">
+      No hay empleados vinculados a esta nómina
+    </div>
+  )}
+</div>
         </div>
       )}
 
