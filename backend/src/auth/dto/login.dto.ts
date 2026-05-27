@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, IsIn } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class LoginDto {
   @IsEmail()
@@ -8,7 +8,7 @@ export class LoginDto {
   @IsNotEmpty()
   contrasena!: string;
 
+  @IsOptional()
   @IsString()
-  @IsIn(['admin', 'empleado', 'rrhh'])
-  rol!  : string;
+  rol?: string;
 }

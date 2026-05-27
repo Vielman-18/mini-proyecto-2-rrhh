@@ -51,12 +51,23 @@ type ReporteContratacion = {
   cumpleContratacion: string;
 };
 
+type Nomina = {
+  id: number;
+  tipo_periodo: string;
+  periodo: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  estado: string;
+  fecha_creacion: string;
+};
+
 export default function Reportes() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [nomina, setNomina] = useState<ReporteNomina[]>([]);
   const [expedientes, setExpedientes] = useState<ReporteExpediente[]>([]);
   const [academico, setAcademico] = useState<ReporteAcademico[]>([]);
   const [contratacion, setContratacion] = useState<ReporteContratacion[]>([]);
+  const [nominas, setNominas] = useState<Nomina[]>([]);
   const [periodo, setPeriodo] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -68,13 +79,14 @@ export default function Reportes() {
     try {
       setLoading(true);
 
-      const [empleadosRes, nominaRes, expedientesRes, academicoRes, contratacionRes] =
+      const [empleadosRes, nominaRes, expedientesRes, academicoRes, contratacionRes, nominasRes] =
         await Promise.all([
           api.get('/empleados'),
           api.get('/reportes/nomina'),
           api.get('/reportes/expedientes'),
           api.get('/reportes/academico'),
           api.get('/reportes/contratacion'),
+          api.get('/nomina'),
         ]);
 
       setEmpleados(empleadosRes.data);
@@ -82,6 +94,7 @@ export default function Reportes() {
       setExpedientes(expedientesRes.data);
       setAcademico(academicoRes.data);
       setContratacion(contratacionRes.data);
+      setNominas(nominasRes.data);
     } catch {
       toast.error('Error al cargar reportes');
     } finally {
@@ -94,7 +107,6 @@ export default function Reportes() {
       const res = await api.get('/reportes/nomina', {
         params: periodo ? { periodo } : {},
       });
-
       setNomina(res.data);
       toast.success('Reporte actualizado');
     } catch {
@@ -102,26 +114,25 @@ export default function Reportes() {
     }
   };
 
+  const descargarPdfNomina = (id: number) => {
+    window.open(`http://localhost:3000/nomina/${id}/pdf`, '_blank');
+  };
+
   const totalEmpleados = empleados.length;
   const activos = empleados.filter((e) => e.estado === 'activo').length;
   const retirados = empleados.filter((e) => e.estado === 'retirado').length;
   const totalNomina = nomina.reduce((acc, item) => acc + Number(item.totalPagar || 0), 0);
-const expedientesCompletos = expedientes.filter(
-  (e) => e.totalDocumentos >= 5).length;
-  const cumplenContratacion = contratacion.filter(
-    (c) => c.cumpleContratacion === 'Cumple',
-  ).length;
+  const expedientesCompletos = expedientes.filter((e) => e.totalDocumentos >= 5).length;
+  const cumplenContratacion = contratacion.filter((c) => c.cumpleContratacion === 'Cumple').length;
+  const nominasCerradas = nominas.filter((n) => n.estado === 'cerrada');
 
   return (
     <div className="min-h-screen space-y-8 bg-slate-950 p-6 text-white">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-3xl font-bold">Reportes</h1>
-          <p className="text-slate-400">
-            Resumen general de empleados, nómina, expedientes y contratación
-          </p>
+          <p className="text-slate-400">Resumen general de empleados, nómina, expedientes y contratación</p>
         </div>
-
         <button
           onClick={cargarReportes}
           disabled={loading}
@@ -142,7 +153,6 @@ const expedientesCompletos = expedientes.filter(
 
       <section className="rounded-2xl border border-blue-500/20 bg-slate-900 p-6">
         <h2 className="mb-4 text-xl font-semibold">Filtro de nómina</h2>
-
         <div className="grid gap-4 md:grid-cols-3">
           <input
             value={periodo}
@@ -150,24 +160,52 @@ const expedientesCompletos = expedientes.filter(
             placeholder="Ejemplo: Mayo 2026"
             className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
           />
-
           <button
             onClick={filtrarNomina}
             className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
           >
             Filtrar
           </button>
-
           <button
-            onClick={() => {
-              setPeriodo('');
-              cargarReportes();
-            }}
+            onClick={() => { setPeriodo(''); cargarReportes(); }}
             className="rounded-xl border border-slate-700 px-5 py-3 font-semibold text-slate-300 hover:bg-slate-800"
           >
             Limpiar
           </button>
         </div>
+      </section>
+
+      {/* Nóminas cerradas con PDF */}
+      <section className="rounded-2xl border border-green-500/20 bg-slate-900 p-6">
+        <h2 className="mb-4 text-xl font-semibold">📄 Nóminas cerradas — PDFs</h2>
+        {nominasCerradas.length === 0 ? (
+          <p className="text-slate-500">No hay nóminas cerradas disponibles.</p>
+        ) : (
+          <div className="space-y-3">
+            {nominasCerradas.map((n) => (
+              <div
+                key={n.id}
+                className="flex flex-col justify-between gap-3 rounded-xl bg-slate-950 p-4 md:flex-row md:items-center"
+              >
+                <div>
+                  <p className="font-semibold text-white">{n.periodo} — {n.tipo_periodo}</p>
+                  <p className="text-sm text-slate-400">
+                    {new Date(n.fecha_inicio).toLocaleDateString()} al {new Date(n.fecha_fin).toLocaleDateString()}
+                  </p>
+                  <span className="mt-1 inline-block rounded-full bg-green-500/10 px-3 py-1 text-xs font-semibold text-green-400">
+                    {n.estado}
+                  </span>
+                </div>
+                <button
+                  onClick={() => descargarPdfNomina(n.id)}
+                  className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 hover:bg-green-500/20"
+                >
+                  📥 Descargar PDF
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="grid gap-5 xl:grid-cols-2">
@@ -180,17 +218,10 @@ const expedientesCompletos = expedientes.filter(
                 <div key={index} className="rounded-xl bg-slate-950 p-4">
                   <div className="flex justify-between gap-4">
                     <div>
-                      <p className="font-semibold">
-                        {item.nombres} {item.apellidos}
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        {item.periodo} · {item.tipoPeriodo}
-                      </p>
+                      <p className="font-semibold">{item.nombres} {item.apellidos}</p>
+                      <p className="text-sm text-slate-400">{item.periodo} · {item.tipoPeriodo}</p>
                     </div>
-
-                    <p className="font-bold text-green-400">
-                      Q{Number(item.totalPagar).toFixed(2)}
-                    </p>
+                    <p className="font-bold text-green-400">Q{Number(item.totalPagar).toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -207,21 +238,12 @@ const expedientesCompletos = expedientes.filter(
                 <div key={item.empleadoId} className="rounded-xl bg-slate-950 p-4">
                   <div className="flex justify-between gap-4">
                     <div>
-                      <p className="font-semibold">
-                        {item.nombres} {item.apellidos}
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        Documentos: {item.totalDocumentos}
-                      </p>
+                      <p className="font-semibold">{item.nombres} {item.apellidos}</p>
+                      <p className="text-sm text-slate-400">Documentos: {item.totalDocumentos}</p>
                     </div>
-
-                    <span
-                      className={`h-fit rounded-full px-3 py-1 text-xs font-semibold ${
-                       item.totalDocumentos >= 5
-                      ? 'bg-green-500/10 text-green-400'
-                      : 'bg-red-500/10 text-red-400'
-                      }`}
-                    >
+                    <span className={`h-fit rounded-full px-3 py-1 text-xs font-semibold ${
+                      item.totalDocumentos >= 5 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                    }`}>
                       {item.totalDocumentos >= 5 ? 'Completo' : 'Incompleto'}
                     </span>
                   </div>
@@ -238,12 +260,8 @@ const expedientesCompletos = expedientes.filter(
             <div className="space-y-3">
               {academico.slice(0, 8).map((item) => (
                 <div key={item.empleadoId} className="flex justify-between rounded-xl bg-slate-950 p-4">
-                  <span>
-                    {item.nombres} {item.apellidos}
-                  </span>
-                  <span className="text-blue-400">
-                    {item.totalRegistrosAcademicos} registros
-                  </span>
+                  <span>{item.nombres} {item.apellidos}</span>
+                  <span className="text-blue-400">{item.totalRegistrosAcademicos} registros</span>
                 </div>
               ))}
             </div>
@@ -259,18 +277,12 @@ const expedientesCompletos = expedientes.filter(
                 <div key={item.empleadoId} className="rounded-xl bg-slate-950 p-4">
                   <div className="flex justify-between gap-4">
                     <div>
-                      <p className="font-semibold">
-                        {item.nombres} {item.apellidos}
-                      </p>
+                      <p className="font-semibold">{item.nombres} {item.apellidos}</p>
                       <p className="text-sm text-slate-400">DPI: {item.dpi}</p>
                     </div>
-                    <span
-                      className={`h-fit rounded-full px-3 py-1 text-xs font-semibold ${
-                        item.cumpleContratacion === 'Cumple'
-                          ? 'bg-green-500/10 text-green-400'
-                          : 'bg-amber-500/10 text-amber-400'
-                      }`}
-                    >
+                    <span className={`h-fit rounded-full px-3 py-1 text-xs font-semibold ${
+                      item.cumpleContratacion === 'Cumple' ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'
+                    }`}>
                       {item.cumpleContratacion}
                     </span>
                   </div>
