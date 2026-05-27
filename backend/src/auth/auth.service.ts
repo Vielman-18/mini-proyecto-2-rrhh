@@ -101,10 +101,6 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales incorrectas');
     }
 
-    if (user.rol.toLowerCase() !== dto.rol.toLowerCase()) {
-      throw new UnauthorizedException('El rol no corresponde al usuario');
-    }
-
     const payload = {
       sub: user.id,
       correo: user.correo,
