@@ -32,6 +32,7 @@ export default function Expedientes() {
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [empleadoId, setEmpleadoId] = useState('');
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState<Empleado | null>(null);
   const [usuarioId, setUsuarioId] = useState('');
   const [tipo, setTipo] = useState('DPI');
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -54,14 +55,14 @@ export default function Expedientes() {
     }
   };
 
-  const cargarDocumentos = async (id: string) => {
-    setEmpleadoId(id);
+  const seleccionarEmpleado = async (emp: Empleado) => {
+    setEmpleadoSeleccionado(emp);
+    setEmpleadoId(String(emp.id));
+    setUsuarioId(String(emp.usuario_id || 1));
+    setBusqueda('');
     setDocumentos([]);
-    const empleado = empleados.find((e) => String(e.id) === id);
-    setUsuarioId(String(empleado?.usuario_id || 1));
-    if (!id) return;
     try {
-      const res = await api.get(`/expedientes/empleado/${id}`);
+      const res = await api.get(`/expedientes/empleado/${emp.id}`);
       setDocumentos(res.data);
     } catch {
       setDocumentos([]);
@@ -89,11 +90,22 @@ export default function Expedientes() {
       setArchivo(null);
       const input = document.getElementById('archivo') as HTMLInputElement;
       if (input) input.value = '';
-      await cargarDocumentos(empleadoId);
+      if (empleadoSeleccionado) await seleccionarEmpleado(empleadoSeleccionado);
     } catch {
       toast.error('Error al subir documento');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const eliminarDocumento = async (id: number) => {
+    if (!confirm('¿Eliminar este documento?')) return;
+    try {
+      await api.delete(`/expedientes/${id}`);
+      toast.success('Documento eliminado');
+      if (empleadoSeleccionado) await seleccionarEmpleado(empleadoSeleccionado);
+    } catch {
+      toast.error('Error al eliminar documento');
     }
   };
 
@@ -113,28 +125,36 @@ export default function Expedientes() {
       </div>
 
       <section className="rounded-2xl border border-blue-500/20 bg-slate-900 p-6 shadow-lg">
-        <label className="mb-2 block text-sm text-slate-300">Seleccionar empleado</label>
-
+        <label className="mb-2 block text-sm text-slate-300">Buscar empleado</label>
         <input
           type="text"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar empleado por nombre..."
-          className="mb-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500 placeholder:text-slate-600"
+          placeholder="Escribe el nombre del empleado..."
+          className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500 placeholder:text-slate-600"
         />
 
-        <select
-          value={empleadoId}
-          onChange={(e) => cargarDocumentos(e.target.value)}
-          className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-blue-500"
-        >
-          <option value="">Seleccionar empleado</option>
+        {empleadoSeleccionado && (
+          <p className="mb-3 text-xs text-blue-400">✓ Seleccionado: <span className="font-semibold">{empleadoSeleccionado.nombres} {empleadoSeleccionado.apellidos}</span></p>
+        )}
+
+        <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950">
           {empleadosFiltrados.map((emp) => (
-            <option key={emp.id} value={emp.id}>
+            <button
+              key={emp.id}
+              type="button"
+              onClick={() => seleccionarEmpleado(emp)}
+              className={`w-full px-4 py-3 text-left text-sm transition hover:bg-blue-500/20 ${
+                empleadoSeleccionado?.id === emp.id ? 'bg-blue-500/20 text-blue-300 font-semibold' : 'text-white'
+              }`}
+            >
               {emp.nombres} {emp.apellidos}
-            </option>
+            </button>
           ))}
-        </select>
+          {empleadosFiltrados.length === 0 && (
+            <p className="px-4 py-3 text-sm text-slate-500">No se encontraron empleados.</p>
+          )}
+        </div>
       </section>
 
       {empleadoId && (
@@ -188,10 +208,18 @@ export default function Expedientes() {
                       <p className="text-xs text-slate-500">{new Date(doc.fecha_carga).toLocaleDateString()}</p>
                     )}
                   </div>
-                  <a href={`http://localhost:3000/expedientes/archivo/${doc.id}`} target="_blank" rel="noreferrer"
-                    className="rounded-lg border border-blue-500/30 px-4 py-2 text-center text-sm font-semibold text-blue-400 hover:bg-blue-500/10">
-                    Descargar
-                  </a>
+                  <div className="flex gap-2">
+                    <a href={`http://localhost:3000/expedientes/archivo/${doc.id}`} target="_blank" rel="noreferrer"
+                      className="rounded-lg border border-blue-500/30 px-4 py-2 text-center text-sm font-semibold text-blue-400 hover:bg-blue-500/10">
+                      Descargar
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => eliminarDocumento(doc.id)}
+                      className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/10">
+                      Eliminar
+                    </button>
+                  </div>
                 </div>
               ))}
               {documentos.length === 0 && <p className="text-slate-500">No hay documentos cargados.</p>}

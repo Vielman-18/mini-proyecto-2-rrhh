@@ -65,6 +65,11 @@ let DocumentosService = class DocumentosService {
         }
         return doc;
     }
+    async eliminarDocumento(id) {
+        return this.prisma.documentos.delete({
+            where: { id },
+        });
+    }
 };
 exports.DocumentosService = DocumentosService;
 exports.DocumentosService = DocumentosService = __decorate([

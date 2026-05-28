@@ -36,6 +36,9 @@ let DocumentosController = class DocumentosController {
         });
         res.send(doc.archivo_binario);
     }
+    eliminarDocumento(id) {
+        return this.documentosService.eliminarDocumento(id);
+    }
 };
 exports.DocumentosController = DocumentosController;
 __decorate([
@@ -62,6 +65,13 @@ __decorate([
     __metadata("design:paramtypes", [Number, Object]),
     __metadata("design:returntype", Promise)
 ], DocumentosController.prototype, "descargarArchivo", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", void 0)
+], DocumentosController.prototype, "eliminarDocumento", null);
 exports.DocumentosController = DocumentosController = __decorate([
     (0, common_1.Controller)('expedientes'),
     __metadata("design:paramtypes", [documentos_service_1.DocumentosService])
