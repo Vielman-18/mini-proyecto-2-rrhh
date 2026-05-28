@@ -46,6 +46,7 @@ function RRHHLayout() {
           <Route path="expedientes" element={<Expedientes />} />
           <Route path="reportes" element={<Reportes />} />
           <Route path="academico" element={<Academico />} />
+
           <Route path="*" element={<Navigate to="/rrhh" replace />} />
         </Routes>
       </main>

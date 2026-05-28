@@ -64,16 +64,10 @@ export function useEmpleados() {
     cargarPuestos();
   }, []);
 
-  /* =========================
-     VALIDACIÓN ZOD + NEGOCIO
-  ========================= */
 const validarFormulario = () => {
   const result = empleadoSchema.safeParse(form);
   const newErrors: Record<string, string> = {};
 
-  // =========================
-  // ZOD VALIDATION
-  // =========================
   if (!result.success) {
     result.error.issues.forEach((issue) => {
       const path = issue.path[0] as string;
@@ -85,9 +79,7 @@ const validarFormulario = () => {
     return false;
   }
 
-  // =========================
-  // DPI: sin espacios + único
-  // =========================
+
   const dpiLimpio = form.dpi.replace(/\s/g, '');
 
   const dpiExiste = empleados.some((emp) => {
@@ -103,9 +95,6 @@ const validarFormulario = () => {
     newErrors['dpi'] = 'El DPI no puede contener espacios';
   }
 
-  // =========================
-  // EMAIL: formato + único
-  // =========================
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (form.email && !emailRegex.test(form.email)) {
@@ -121,9 +110,6 @@ const validarFormulario = () => {
     newErrors['email'] = 'Este correo ya está registrado';
   }
 
-  // =========================
-  // EDAD: 18 a 182 años
-  // =========================
   if (form.fechaNacimiento) {
     const hoy = new Date();
     const nacimiento = new Date(form.fechaNacimiento);
@@ -141,9 +127,6 @@ const validarFormulario = () => {
     }
   }
 
-  // =========================
-  // RETURN ERRORS
-  // =========================
   if (Object.keys(newErrors).length > 0) {
     setErrors(newErrors);
     toast.error(Object.values(newErrors)[0]);
@@ -153,9 +136,7 @@ const validarFormulario = () => {
   setErrors({});
   return true;
 };
-  /* =========================
-     GUARDAR
-  ========================= */
+  
   const guardarEmpleado = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 

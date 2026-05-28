@@ -90,6 +90,74 @@ let NominaService = class NominaService {
             detalles: resultados,
         };
     }
+    async agregarEmpleadosPorPuesto(nominaId, puestoId) {
+        const nomina = await this.prisma.nomina.findUnique({
+            where: { id: nominaId },
+        });
+        if (!nomina) {
+            throw new common_1.NotFoundException('Nómina no encontrada');
+        }
+        this.validarNominaEditable(nomina);
+        const empleados = await this.prisma.empleados.findMany({
+            where: {
+                estado: 'activo',
+                puesto_id: puestoId,
+            },
+        });
+        if (empleados.length === 0) {
+            throw new common_1.NotFoundException('No hay empleados en este puesto');
+        }
+        const parametros = await this.prisma.parametros_nomina.findMany({
+            where: { activo: true },
+        });
+        const igssPorcentaje = Number(parametros.find((p) => p.nombre?.toUpperCase() === 'IGSS')?.valor) || 4.83;
+        const irtraPorcentaje = Number(parametros.find((p) => p.nombre?.toUpperCase() === 'IRTRA')?.valor) || 1;
+        const resultados = [];
+        for (const empleado of empleados) {
+            const existeDetalle = await this.prisma.detalle_nomina.findFirst({
+                where: {
+                    nomina_id: nominaId,
+                    empleado_id: empleado.id,
+                },
+            });
+            if (existeDetalle)
+                continue;
+            const salarioMensual = Number(empleado.salario);
+            let salarioBase = salarioMensual;
+            if (nomina.tipo_periodo === 'quincenal') {
+                salarioBase = salarioMensual / 2;
+            }
+            const valorHora = salarioMensual / 240;
+            const ingresoGravable = salarioBase;
+            const igss = ingresoGravable * (igssPorcentaje / 100);
+            const irtra = ingresoGravable * (irtraPorcentaje / 100);
+            const deducciones = igss + irtra;
+            const salarioFinal = ingresoGravable - deducciones;
+            const detalle = await this.prisma.detalle_nomina.create({
+                data: {
+                    nomina_id: nominaId,
+                    empleado_id: empleado.id,
+                    salario_base: salarioBase,
+                    horas_extra: 0,
+                    monto_horas_extra: 0,
+                    bonificaciones: 0,
+                    comisiones: 0,
+                    igss,
+                    irtra,
+                    descuentos_legales: 0,
+                    deducciones,
+                    salario_final: salarioFinal,
+                },
+            });
+            resultados.push(detalle);
+        }
+        return {
+            total_agregados: resultados.length,
+            nomina_id: nominaId,
+            puesto_id: puestoId,
+            detalles: resultados,
+        };
+    }
     normalizarEstadoNomina(estado) {
         if (!estado || estado === 'abierta') {
             return cambiar_estado_dto_1.EstadoNomina.ACTIVA;
@@ -425,6 +493,59 @@ let NominaService = class NominaService {
         const irtra = ingresoGravable * (irtraPorcentaje / 100);
         const deducciones = descuentosLegales + igss + irtra;
         const salarioFinal = ingresoGravable - deducciones;
+        const cambios = [];
+        if (dto.horas_trabajadas !== undefined &&
+            Number(dto.horas_trabajadas) !== Number(detalle.horas_trabajadas ?? 0)) {
+            cambios.push({
+                campo: 'Horas trabajadas',
+                anterior: Number(detalle.horas_trabajadas ?? 0),
+                nuevo: Number(dto.horas_trabajadas),
+            });
+        }
+        if (dto.horas_extra !== undefined &&
+            Number(dto.horas_extra) !== Number(detalle.horas_extra ?? 0)) {
+            cambios.push({
+                campo: 'Horas extra',
+                anterior: Number(detalle.horas_extra ?? 0),
+                nuevo: Number(dto.horas_extra),
+            });
+        }
+        if (dto.bonificaciones !== undefined &&
+            Number(dto.bonificaciones) !== Number(detalle.bonificaciones ?? 0)) {
+            cambios.push({
+                campo: 'Bonificaciones',
+                anterior: Number(detalle.bonificaciones ?? 0),
+                nuevo: Number(dto.bonificaciones),
+            });
+        }
+        if (dto.comisiones !== undefined &&
+            Number(dto.comisiones) !== Number(detalle.comisiones ?? 0)) {
+            cambios.push({
+                campo: 'Comisiones',
+                anterior: Number(detalle.comisiones ?? 0),
+                nuevo: Number(dto.comisiones),
+            });
+        }
+        if (dto.descuentos_legales !== undefined &&
+            Number(dto.descuentos_legales) !== Number(detalle.descuentos_legales ?? 0)) {
+            cambios.push({
+                campo: 'Descuentos legales',
+                anterior: Number(detalle.descuentos_legales ?? 0),
+                nuevo: Number(dto.descuentos_legales),
+            });
+        }
+        if (cambios.length > 0) {
+            await Promise.all(cambios.map((cambio) => this.prisma.ajustes_nomina.create({
+                data: {
+                    detalle_nomina_id: detalleId,
+                    usuario_id: 1,
+                    campo_modificado: cambio.campo,
+                    valor_anterior: cambio.anterior,
+                    valor_nuevo: cambio.nuevo,
+                    motivo: 'Actualización de detalle de nómina',
+                },
+            })));
+        }
         return this.prisma.detalle_nomina.update({
             where: { id: detalleId },
             data: {

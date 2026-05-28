@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNomina } from '../hooks/NominaLogic';
+import HistorialNominaModal from './Historial';
 import {
   ModalPeriodo,
   DrawerEmpleado,
@@ -9,6 +10,12 @@ import {
 } from '../components/NominaWidgets';
 
 export default function Nomina() {
+
+  const [historialOpen, setHistorialOpen] =
+  useState(false);
+
+const [detalleSeleccionado, setDetalleSeleccionado] =
+  useState<number | undefined>();
   const h = useNomina();
   const [mOpen, setMOpen] = useState(false);
   const [dOpen, setDOpen] = useState(false);
@@ -370,13 +377,22 @@ export default function Nomina() {
           </td>
 
           {/* ACCIONES */}
-          <td className="py-4 text-right px-4">
+          <td className="py-4 text-right px-4 space-y-2">
             <button
               onClick={() => h.solicitarEliminarEmpleado(d.empleado_id)}
               disabled={!isNominaEditable || h.loading}
-              className="px-3 py-1.5 rounded-xl text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full px-3 py-1.5 rounded-xl text-sm bg-red-500/10 text-red-400 hover:bg-red-500/20 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Remover
+            </button>
+            <button
+              onClick={() => {
+                setDetalleSeleccionado(d.id);
+                setHistorialOpen(true);
+              }}
+              className="w-full px-3 py-1.5 rounded-xl text-sm bg-cyan-400/10 text-cyan-300 hover:bg-cyan-400/20 transition"
+            >
+              Historial
             </button>
           </td>
 
@@ -397,6 +413,11 @@ export default function Nomina() {
       )}
 
       {/* MODALES */}
+      <HistorialNominaModal
+        isOpen={historialOpen}
+        onClose={() => setHistorialOpen(false)}
+        detalleId={detalleSeleccionado}
+      />
       <ModalPeriodo isOpen={mOpen} onClose={() => setMOpen(false)} h={h} />
       <ModalDetalleEmpleado isOpen={detalleOpen} onClose={() => setDetalleOpen(false)} detalle={detalle} h={h} />
       <DrawerEmpleado isOpen={dOpen} onClose={() => setDOpen(false)} h={h} />

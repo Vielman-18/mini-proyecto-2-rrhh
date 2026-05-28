@@ -34,25 +34,35 @@ export class EmpleadosService {
     });
   }
 
-  async listar() {
-    return this.prisma.empleados.findMany({
-      orderBy: {
-        id: 'asc',
-      },
-    });
-  }
+async listar() {
+  return this.prisma.empleados.findMany({
+    include: {
+      departamentos: true,
+      puestos: true,
+    },
+
+    orderBy: {
+      id: 'asc',
+    },
+  });
+}
 
   async buscarPorId(id: number) {
-    const empleado = await this.prisma.empleados.findUnique({
-      where: { id },
-    });
+  const empleado = await this.prisma.empleados.findUnique({
+    where: { id },
 
-    if (!empleado) {
-      throw new NotFoundException('Empleado no encontrado');
-    }
+    include: {
+      departamentos: true,
+      puestos: true,
+    },
+  });
 
-    return empleado;
+  if (!empleado) {
+    throw new NotFoundException('Empleado no encontrado');
   }
+
+  return empleado;
+}
 
   async actualizar(id: number, dto: ActualizarEmpleadoDto) {
     await this.buscarPorId(id);

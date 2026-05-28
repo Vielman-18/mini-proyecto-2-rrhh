@@ -44,6 +44,10 @@ let EmpleadosService = class EmpleadosService {
     }
     async listar() {
         return this.prisma.empleados.findMany({
+            include: {
+                departamentos: true,
+                puestos: true,
+            },
             orderBy: {
                 id: 'asc',
             },
@@ -52,6 +56,10 @@ let EmpleadosService = class EmpleadosService {
     async buscarPorId(id) {
         const empleado = await this.prisma.empleados.findUnique({
             where: { id },
+            include: {
+                departamentos: true,
+                puestos: true,
+            },
         });
         if (!empleado) {
             throw new common_1.NotFoundException('Empleado no encontrado');

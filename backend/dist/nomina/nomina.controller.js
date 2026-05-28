@@ -30,6 +30,9 @@ let NominaController = class NominaController {
     async agregarEmpleadosPorDepartamento(id, departamentoId) {
         return this.nominaService.agregarEmpleadosPorDepartamento(Number(id), Number(departamentoId));
     }
+    async agregarEmpleadosPorPuesto(id, puestoId) {
+        return this.nominaService.agregarEmpleadosPorPuesto(Number(id), Number(puestoId));
+    }
     CrearDetalleNomina(dto) {
         return this.nominaService.crearDetalleNomina(dto);
     }
@@ -77,6 +80,14 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], NominaController.prototype, "agregarEmpleadosPorDepartamento", null);
+__decorate([
+    (0, common_1.Post)(':id/puesto/:puestoId'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('puestoId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], NominaController.prototype, "agregarEmpleadosPorPuesto", null);
 __decorate([
     (0, common_1.Post)('detalle'),
     __param(0, (0, common_1.Body)()),
