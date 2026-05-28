@@ -6,6 +6,7 @@ import { NominaPdfService } from './nomina-pdf/nomina-pdf.service';
 
 
 @Module({
+  controllers: [ReportesController],
   providers: [NominaPdfService, ReportesService, PrismaService],
   exports: [NominaPdfService, ReportesService, PrismaService],
 })
