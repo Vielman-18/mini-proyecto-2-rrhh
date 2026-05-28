@@ -37,20 +37,22 @@ export default function Academico() {
   const [registros, setRegistros] = useState<RegistroAcademico[]>([]);
   const [form, setForm] = useState<FormAcademico>(formInicial);
   const [loading, setLoading] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const [mostrarLista, setMostrarLista] = useState(false);
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
-
       const [resEmpleados, resAcademico] = await Promise.all([
         api.get('/empleados'),
         api.get('/academico'),
       ]);
-
-      setEmpleados(resEmpleados.data);
+      const ordenados = resEmpleados.data.sort((a: Empleado, b: Empleado) =>
+        `${a.nombres} ${a.apellidos}`.localeCompare(`${b.nombres} ${b.apellidos}`)
+      );
+      setEmpleados(ordenados);
       setRegistros(resAcademico.data);
     } catch (error: any) {
-      console.log(error.response?.data);
       toast.error('Error al cargar información académica');
     } finally {
       setLoading(false);
@@ -63,21 +65,9 @@ export default function Academico() {
 
   const guardarAcademico = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (!form.empleado_id) {
-      toast.error('Selecciona un empleado');
-      return;
-    }
-
-    if (!form.titulo.trim()) {
-      toast.error('El título académico es obligatorio');
-      return;
-    }
-
-    if (!form.institucion.trim()) {
-      toast.error('La institución es obligatoria');
-      return;
-    }
+    if (!form.empleado_id) { toast.error('Selecciona un empleado'); return; }
+    if (!form.titulo.trim()) { toast.error('El título académico es obligatorio'); return; }
+    if (!form.institucion.trim()) { toast.error('La institución es obligatoria'); return; }
 
     const payload = {
       empleado_id: Number(form.empleado_id),
@@ -88,32 +78,32 @@ export default function Academico() {
 
     try {
       await api.post('/academico', payload);
-
       toast.success('Registro académico guardado');
       setForm(formInicial);
+      setBusqueda('');
+      setMostrarLista(false);
       cargarDatos();
     } catch (error: any) {
-      console.log(error.response?.data);
-      toast.error(
-        error.response?.data?.message?.[0] ||
-          error.response?.data?.message ||
-          'Error al guardar registro académico',
-      );
+      toast.error(error.response?.data?.message?.[0] || error.response?.data?.message || 'Error al guardar registro académico');
     }
   };
 
   const eliminarRegistro = async (id: number) => {
     if (!confirm('¿Seguro que deseas eliminar este registro académico?')) return;
-
     try {
       await api.delete(`/academico/${id}`);
       toast.success('Registro académico eliminado');
       cargarDatos();
     } catch (error: any) {
-      console.log(error.response?.data);
       toast.error('No se pudo eliminar el registro');
     }
   };
+
+  const empleadosFiltrados = empleados.filter((emp) =>
+    `${emp.nombres} ${emp.apellidos}`.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const empleadoSeleccionado = empleados.find(e => String(e.id) === form.empleado_id);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#020617] p-6 text-white">
@@ -124,56 +114,60 @@ export default function Academico() {
         <section className="relative overflow-hidden rounded-[2.2rem] border border-cyan-400/20 bg-slate-950/80 p-8 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl">
           <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-cyan-500/20 blur-3xl" />
           <div className="absolute -bottom-28 left-1/3 h-80 w-80 rounded-full bg-violet-500/20 blur-3xl" />
-
           <div className="relative z-10 flex flex-col gap-6 md:flex-row md:items-center">
             <div className="flex h-24 w-24 items-center justify-center rounded-[2rem] border border-cyan-300/40 bg-cyan-400/10 shadow-xl shadow-cyan-500/20">
               <span className="text-3xl font-black text-cyan-300">UMG</span>
             </div>
-
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.4em] text-cyan-300">
-                Universidad Mariano Gálvez
-              </p>
-              <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
-                Información Académica
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">
-                Registro de títulos, certificaciones e instituciones por empleado.
-              </p>
+              <p className="text-xs font-black uppercase tracking-[0.4em] text-cyan-300">Universidad Mariano Gálvez</p>
+              <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Información Académica</h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-400">Registro de títulos, certificaciones e instituciones por empleado.</p>
             </div>
           </div>
         </section>
 
         <section className="grid gap-8 xl:grid-cols-[0.85fr_1.15fr]">
-          <form
-            onSubmit={guardarAcademico}
-            className="rounded-[2rem] border border-cyan-400/15 bg-slate-950/80 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl"
-          >
+          <form onSubmit={guardarAcademico} className="rounded-[2rem] border border-cyan-400/15 bg-slate-950/80 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
             <div className="mb-6 border-b border-cyan-400/10 pb-5">
-              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">
-                Nuevo registro
-              </p>
-              <h2 className="mt-2 text-2xl font-black text-white">
-                Formación académica
-              </h2>
+              <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">Nuevo registro</p>
+              <h2 className="mt-2 text-2xl font-black text-white">Formación académica</h2>
             </div>
 
             <div className="space-y-5">
-              <Field label="Empleado">
-                <select
-                  value={form.empleado_id}
-                  onChange={(e) =>
-                    setForm({ ...form, empleado_id: e.target.value })
-                  }
-                  className="input-futurista"
-                >
-                  <option value="">Seleccione un empleado</option>
-                  {empleados.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.nombres} {emp.apellidos} - {emp.dpi}
-                    </option>
-                  ))}
-                </select>
+              <Field label="Buscar empleado">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={busqueda}
+                    onChange={(e) => { setBusqueda(e.target.value); setMostrarLista(true); }}
+                    onFocus={() => setMostrarLista(true)}
+                    placeholder="Escribe el nombre..."
+                    className="w-full rounded-2xl border border-cyan-400/15 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
+                  />
+                  {mostrarLista && empleadosFiltrados.length > 0 && (
+                    <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-2xl border border-cyan-400/15 bg-slate-900 shadow-xl">
+                      {empleadosFiltrados.map((emp) => (
+                        <button
+                          key={emp.id}
+                          type="button"
+                          onClick={() => {
+                            setForm({ ...form, empleado_id: String(emp.id) });
+                            setBusqueda(`${emp.nombres} ${emp.apellidos}`);
+                            setMostrarLista(false);
+                          }}
+                          className={`w-full px-4 py-2 text-left text-sm transition hover:bg-cyan-500/20 ${
+                            form.empleado_id === String(emp.id) ? 'bg-cyan-500/20 text-cyan-300 font-semibold' : 'text-white'
+                          }`}
+                        >
+                          {emp.nombres} {emp.apellidos} - {emp.dpi}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {empleadoSeleccionado && (
+                  <p className="mt-2 text-xs text-cyan-400">✓ Seleccionado: <span className="font-semibold">{empleadoSeleccionado.nombres} {empleadoSeleccionado.apellidos}</span></p>
+                )}
               </Field>
 
               <Field label="Título o certificación">
@@ -182,7 +176,7 @@ export default function Academico() {
                   value={form.titulo}
                   onChange={(e) => setForm({ ...form, titulo: e.target.value })}
                   placeholder="Ej: Ingeniería en Sistemas"
-                  className="input-futurista"
+                  className="w-full rounded-2xl border border-cyan-400/15 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </Field>
 
@@ -190,11 +184,9 @@ export default function Academico() {
                 <input
                   type="text"
                   value={form.institucion}
-                  onChange={(e) =>
-                    setForm({ ...form, institucion: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, institucion: e.target.value })}
                   placeholder="Ej: Universidad Mariano Gálvez"
-                  className="input-futurista"
+                  className="w-full rounded-2xl border border-cyan-400/15 bg-slate-900 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </Field>
 
@@ -202,26 +194,18 @@ export default function Academico() {
                 <input
                   type="date"
                   value={form.fecha_graduacion}
-                  onChange={(e) =>
-                    setForm({ ...form, fecha_graduacion: e.target.value })
-                  }
-                  className="input-futurista"
+                  onChange={(e) => setForm({ ...form, fecha_graduacion: e.target.value })}
+                  className="w-full rounded-2xl border border-cyan-400/15 bg-slate-900 px-4 py-3 text-white outline-none focus:border-cyan-400"
                 />
               </Field>
 
               <div className="flex flex-col gap-3 pt-3 sm:flex-row">
-                <button
-                  type="submit"
-                  className="flex-1 rounded-2xl border border-cyan-300/30 bg-cyan-400 px-6 py-4 font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:bg-cyan-300"
-                >
+                <button type="submit"
+                  className="flex-1 rounded-2xl border border-cyan-300/30 bg-cyan-400 px-6 py-4 font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:bg-cyan-300">
                   Guardar registro
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setForm(formInicial)}
-                  className="rounded-2xl border border-slate-700 bg-slate-900 px-6 py-4 font-bold text-slate-300 transition hover:bg-slate-800"
-                >
+                <button type="button" onClick={() => { setForm(formInicial); setBusqueda(''); setMostrarLista(false); }}
+                  className="rounded-2xl border border-slate-700 bg-slate-900 px-6 py-4 font-bold text-slate-300 transition hover:bg-slate-800">
                   Limpiar
                 </button>
               </div>
@@ -231,14 +215,9 @@ export default function Academico() {
           <section className="overflow-hidden rounded-[2rem] border border-cyan-400/15 bg-slate-950/80 shadow-2xl shadow-black/30 backdrop-blur-xl">
             <div className="flex flex-col gap-2 border-b border-cyan-400/10 p-6 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">
-                  UMG Académico
-                </p>
-                <h2 className="mt-2 text-2xl font-black text-white">
-                  Registros académicos
-                </h2>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-300">UMG Académico</p>
+                <h2 className="mt-2 text-2xl font-black text-white">Registros académicos</h2>
               </div>
-
               <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm font-bold text-cyan-300">
                 {loading ? 'Cargando...' : `${registros.length} registros`}
               </span>
@@ -248,86 +227,38 @@ export default function Academico() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-cyan-400/[0.04]">
-                    {[
-                      'Empleado',
-                      'Título / Certificación',
-                      'Institución',
-                      'Fecha',
-                      'Acción',
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-slate-500"
-                      >
-                        {h}
-                      </th>
+                    {['Empleado', 'Título / Certificación', 'Institución', 'Fecha', 'Acción'].map((h) => (
+                      <th key={h} className="px-5 py-4 text-left text-xs font-black uppercase tracking-widest text-slate-500">{h}</th>
                     ))}
                   </tr>
                 </thead>
-
                 <tbody>
                   {registros.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-t border-cyan-400/5 transition hover:bg-cyan-400/[0.04]"
-                    >
+                    <tr key={item.id} className="border-t border-cyan-400/5 transition hover:bg-cyan-400/[0.04]">
                       <td className="px-5 py-5">
                         <p className="font-bold text-white">
-                          {item.empleados
-                            ? `${item.empleados.nombres} ${item.empleados.apellidos}`
-                            : `Empleado ID: ${item.empleado_id}`}
+                          {item.empleados ? `${item.empleados.nombres} ${item.empleados.apellidos}` : `Empleado ID: ${item.empleado_id}`}
                         </p>
-                        <p className="text-xs text-slate-500">
-                          {item.empleados?.dpi || 'Sin DPI'}
-                        </p>
+                        <p className="text-xs text-slate-500">{item.empleados?.dpi || 'Sin DPI'}</p>
                       </td>
-
-                      <td className="px-5 py-5 text-sm font-bold text-cyan-300">
-                        {item.titulo}
-                      </td>
-
+                      <td className="px-5 py-5 text-sm font-bold text-cyan-300">{item.titulo}</td>
+                      <td className="px-5 py-5 text-sm text-slate-400">{item.institucion}</td>
                       <td className="px-5 py-5 text-sm text-slate-400">
-                        {item.institucion}
+                        {item.fecha_graduacion ? item.fecha_graduacion.substring(0, 10) : 'Sin fecha'}
                       </td>
-
-                      <td className="px-5 py-5 text-sm text-slate-400">
-                        {item.fecha_graduacion
-                          ? item.fecha_graduacion.substring(0, 10)
-                          : 'Sin fecha'}
-                      </td>
-
                       <td className="px-5 py-5">
-                        <button
-                          type="button"
-                          onClick={() => eliminarRegistro(item.id)}
-                          className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 transition hover:bg-red-500/20"
-                        >
+                        <button type="button" onClick={() => eliminarRegistro(item.id)}
+                          className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-300 transition hover:bg-red-500/20">
                           Eliminar
                         </button>
                       </td>
                     </tr>
                   ))}
-
                   {!loading && registros.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-5 py-12 text-center text-sm text-slate-500"
-                      >
-                        No hay registros académicos.
-                      </td>
-                    </tr>
+                    <tr><td colSpan={5} className="px-5 py-12 text-center text-sm text-slate-500">No hay registros académicos.</td></tr>
                   )}
-
                   {loading && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-5 py-12 text-center text-sm text-slate-500"
-                      >
-                        Cargando información académica...
-                      </td>
-                    </tr>
+                    <tr><td colSpan={5} className="px-5 py-12 text-center text-sm text-slate-500">Cargando información académica...</td></tr>
                   )}
                 </tbody>
               </table>
@@ -339,18 +270,10 @@ export default function Academico() {
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-bold text-slate-300">
-        {label}
-      </label>
+      <label className="mb-2 block text-sm font-bold text-slate-300">{label}</label>
       {children}
     </div>
   );
