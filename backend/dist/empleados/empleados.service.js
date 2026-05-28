@@ -48,8 +48,11 @@ let EmpleadosService = class EmpleadosService {
                 departamentos: true,
                 puestos: true,
             },
+            where: {
+                estado: EstadoLaboral.ACTIVO,
+            },
             orderBy: {
-                id: 'asc',
+                nombres: 'asc',
             },
         });
     }
@@ -80,7 +83,9 @@ let EmpleadosService = class EmpleadosService {
                 direccion: dto.direccion,
                 email: dto.email,
                 telefono: dto.telefono,
-                salario: dto.salario !== undefined ? Number(dto.salario) : undefined,
+                salario: dto.salario !== undefined
+                    ? Number(dto.salario)
+                    : undefined,
                 puesto_id: dto.puesto_id,
                 departamento_id: dto.departamento_id,
             },
