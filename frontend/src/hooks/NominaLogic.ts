@@ -426,15 +426,16 @@ const crearNomina = async (): Promise<boolean> => {
     const anioActual = String(ahora.getFullYear());
     const diaActual = ahora.getDate();
 
+    const mesesArr = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
     const esMesActual =
       tipoPeriodo === 'quincenal' &&
       anio === anioActual &&
-      ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'].indexOf(mes) === mesActual;
+      mesesArr.indexOf(mes) === mesActual;
 
     const periodosACrear = tipoPeriodo === 'quincenal'
       ? esMesActual
         ? [
-            `${mes}${anio}${diaActual > 15 ? 'Q2' : 'Q1'}`,
+            `${mes}${anio}${diaActual >= 19 ? 'Q2' : 'Q1'}`,
           ]
         : [`${mes}${anio}Q1`, `${mes}${anio}Q2`]
       : [`${mes}${anio}`];
@@ -442,6 +443,52 @@ const crearNomina = async (): Promise<boolean> => {
     let ultimaNominaId = '';
 
     for (const p of periodosACrear) {
+      // Frontend validation antes de enviar: evitar peticiones que el backend rechazará
+      // Convertir mes+anio a formato 'YYYY-MM' para comparar con las nóminas existentes
+      const monthIndex = mesesArr.indexOf(mes) + 1;
+      const monthStr = String(monthIndex).padStart(2, '0');
+      const monthPrefix = `${anio}-${monthStr}`; // 'YYYY-MM'
+
+      if (tipoPeriodo === 'mensual') {
+        const existeParaMes = nominas.some((n) => String(n.periodo).startsWith(monthPrefix));
+        if (existeParaMes) {
+          toast.error(`Ya existe una nómina para ${mes} ${anio}. Sólo se permite una nómina mensual o hasta dos quincenales por mes.`);
+          return false;
+        }
+      } else {
+        // quincenal
+        const existeMensual = nominas.some(
+          (n) => n.tipo_periodo === 'mensual' && String(n.periodo).startsWith(monthPrefix),
+        );
+        if (existeMensual) {
+          toast.error(`Ya existe una nómina mensual para ${mes} ${anio}. No se pueden crear quincenales para ese mes.`);
+          return false;
+        }
+
+        // si intentamos crear ambas quincenas, verificar que no haya ya dos quincenales
+        if (periodosACrear.length === 2) {
+          const quincenalesExistentes = nominas.filter(
+            (n) => n.tipo_periodo === 'quincenal' && String(n.periodo).startsWith(monthPrefix),
+          ).length;
+          if (quincenalesExistentes >= 2) {
+            toast.error(`Ya existen dos quincenas para ${mes} ${anio}.`);
+            return false;
+          }
+        } else {
+          // creando una sola quincena (Q1 o Q2)
+          const quincenaCrear = p.endsWith('Q2') ? 'Q2' : p.endsWith('Q1') ? 'Q1' : null;
+          if (quincenaCrear) {
+            const mismaQuincena = nominas.some(
+              (n) => n.tipo_periodo === 'quincenal' && String(n.periodo).startsWith(monthPrefix) && String(n.periodo).endsWith(quincenaCrear),
+            );
+            if (mismaQuincena) {
+              toast.error(`La quincena ${quincenaCrear} de ${mes} ${anio} ya existe.`);
+              return false;
+            }
+          }
+        }
+      }
+
       const res = await api.post('/nomina', {
         tipo_periodo: tipoPeriodo,
         periodo: p,

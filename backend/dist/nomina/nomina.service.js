@@ -329,15 +329,45 @@ let NominaService = class NominaService {
         return { inicio, fin, periodo: periodoCanon };
     }
     async validarPeriodoUnico(tipoPeriodo, periodo) {
-        const existente = await this.prisma.nomina.findFirst({
-            where: {
-                tipo_periodo: tipoPeriodo,
-                periodo,
-                eliminada: false,
-            },
-        });
-        if (existente) {
-            throw new common_1.BadRequestException(`Ya existe una nómina activa de tipo '${tipoPeriodo}' para el periodo '${periodo}'. Elimínala o cambia el periodo antes de crear una nueva.`);
+        const parsed = this.parsePeriodo(periodo, tipoPeriodo);
+        const periodoCanon = parsed.periodo;
+        const monthPrefix = periodoCanon.slice(0, 7);
+        if (tipoPeriodo === crear_nomina_dto_1.TipoPeriodo.MENSUAL || tipoPeriodo === 'mensual') {
+            const existente = await this.prisma.nomina.findFirst({
+                where: {
+                    periodo: {
+                        startsWith: monthPrefix,
+                    },
+                    eliminada: false,
+                },
+            });
+            if (existente) {
+                throw new common_1.BadRequestException(`Ya existe una nómina para el mes '${monthPrefix}'. Solo puede haber una nómina mensual o hasta dos quincenales por mes.`);
+            }
+        }
+        else {
+            const mensualExistente = await this.prisma.nomina.findFirst({
+                where: {
+                    tipo_periodo: crear_nomina_dto_1.TipoPeriodo.MENSUAL,
+                    periodo: {
+                        startsWith: monthPrefix,
+                    },
+                    eliminada: false,
+                },
+            });
+            if (mensualExistente) {
+                throw new common_1.BadRequestException(`Ya existe una nómina mensual para el mes '${monthPrefix}'. No se pueden crear nóminas quincenales para el mismo mes.`);
+            }
+            const mismaQuincena = await this.prisma.nomina.findFirst({
+                where: {
+                    tipo_periodo: crear_nomina_dto_1.TipoPeriodo.QUINCENAL,
+                    periodo: periodoCanon,
+                    eliminada: false,
+                },
+            });
+            if (mismaQuincena) {
+                throw new common_1.BadRequestException(`Ya existe la quincena '${periodoCanon}' para este mes.`);
+            }
         }
     }
     async crearNomina(dto) {

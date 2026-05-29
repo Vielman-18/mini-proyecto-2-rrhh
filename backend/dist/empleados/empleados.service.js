@@ -48,9 +48,6 @@ let EmpleadosService = class EmpleadosService {
                 departamentos: true,
                 puestos: true,
             },
-            where: {
-                estado: EstadoLaboral.ACTIVO,
-            },
             orderBy: {
                 nombres: 'asc',
             },
