@@ -222,16 +222,41 @@ const validarFormulario = () => {
     }
   };
 
-  const cambiarEstado = async (id: number, estado: EstadoEmpleado) => {
-    try {
-      await api.put(`/empleados/${id}/estado`, { estado });
-      toast.success('Estado actualizado');
-      cargarEmpleados();
-    } catch (error: any) {
-      console.log(error.response?.data);
-      toast.error('No se pudo cambiar el estado');
-    }
-  };
+
+const cambiarEstado = async (
+  id: number,
+  estado: EstadoEmpleado,
+) => {
+
+  try {
+
+    await api.put(`/empleados/${id}/estado`, {
+      estado,
+    });
+
+    setEmpleados((prev) =>
+      prev.map((emp) =>
+        emp.id === id
+          ? {
+              ...emp,
+              estado,
+            }
+          : emp,
+      ),
+    );
+
+    toast.success('Estado actualizado');
+
+  } catch (error: any) {
+
+    console.log(error.response?.data);
+
+    toast.error('No se pudo cambiar el estado');
+
+  }
+};
+
+
 
   const handleDepartamentoChange = async (value: string) => {
     const departamento_id = value ? Number(value) : null;

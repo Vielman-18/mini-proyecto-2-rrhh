@@ -183,8 +183,9 @@ let NominaService = class NominaService {
             throw new common_1.BadRequestException('La nómina debe ser cerrada antes de procesarse.');
         }
         if (estadoActual === cambiar_estado_dto_1.EstadoNomina.CERRADA &&
-            estadoSiguiente !== cambiar_estado_dto_1.EstadoNomina.PROCESADA) {
-            throw new common_1.BadRequestException('Solo es posible procesar una nómina cerrada.');
+            estadoSiguiente !== cambiar_estado_dto_1.EstadoNomina.PROCESADA &&
+            estadoSiguiente !== cambiar_estado_dto_1.EstadoNomina.ACTIVA) {
+            throw new common_1.BadRequestException('Solo es posible procesar o reabrir una nómina cerrada.');
         }
     }
     async agregarTodosEmpleadosANomina(nominaId) {

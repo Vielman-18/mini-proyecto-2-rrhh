@@ -39,10 +39,12 @@ export function useNomina() {
   const [confirmacionMensaje, setConfirmacionMensaje] = useState('');
   const [confirmacionAccion, setConfirmacionAccion] = useState<(() => Promise<void>) | null>(null);
 
-  const normalizeEstadoNomina = (estado?: string) => {
-    if (!estado || estado === 'abierta' || estado === 'activo') return 'activa';
-    if (estado === 'inactiva') return 'procesada';
-    return estado;
+  const normalizeEstadoNomina = (estado?: string): string => {
+    const raw = String(estado || '').trim().toLowerCase();
+
+    if (!raw || raw === 'abierta' || raw === 'activo') return 'activa';
+    if (raw === 'inactiva') return 'procesada';
+    return raw;
   };
 
 
@@ -363,14 +365,6 @@ const generarPdfEmpleado = async (detalleId: number) => {
       nuevoEstadoNormalizado === 'procesada'
     ) {
       toast.error('La nómina debe cerrarse antes de procesarse.');
-      return;
-    }
-
-    if (
-      estadoActualNormalizado === 'cerrada' &&
-      nuevoEstadoNormalizado !== 'procesada'
-    ) {
-      toast.error('Solo es posible procesar una nómina cerrada.');
       return;
     }
 
