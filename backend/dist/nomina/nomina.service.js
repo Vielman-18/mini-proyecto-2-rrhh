@@ -159,8 +159,11 @@ let NominaService = class NominaService {
         };
     }
     normalizarEstadoNomina(estado) {
-        if (!estado || estado === 'abierta') {
+        if (!estado || estado === 'abierta' || estado === 'activo') {
             return cambiar_estado_dto_1.EstadoNomina.ACTIVA;
+        }
+        if (estado === 'inactiva') {
+            return cambiar_estado_dto_1.EstadoNomina.PROCESADA;
         }
         return estado;
     }
@@ -299,16 +302,16 @@ let NominaService = class NominaService {
             }
         }
         else {
-            throw new common_1.BadRequestException('Periodo inválido. Use mayo2026, 2026-05, mayo2026Q1 o 2026-05-Q1.');
+            throw new common_1.BadRequestException('Periodo inválido. Use formatos como mayo2026, 2026-05, mayo2026Q1 o 2026-05-Q1.');
         }
         if (month < 0 || month > 11) {
             throw new common_1.BadRequestException('Periodo inválido: mes fuera de rango.');
         }
         if (tipoPeriodo === crear_nomina_dto_1.TipoPeriodo.QUINCENAL && !quincena) {
-            throw new common_1.BadRequestException('Para periodos quincenales debe indicar Q1 o Q2.');
+            throw new common_1.BadRequestException('Periodo quincenal inválido. Incluya Q1 o Q2, por ejemplo mayo2026Q1 o 2026-05-Q2.');
         }
         if (tipoPeriodo === crear_nomina_dto_1.TipoPeriodo.MENSUAL && quincena) {
-            throw new common_1.BadRequestException('Para periodos mensuales no use Q1 o Q2.');
+            throw new common_1.BadRequestException('Periodo mensual inválido. No incluya Q1 o Q2 para nóminas mensuales, use mayo2026 o 2026-05.');
         }
         const inicio = quincena === 'Q2'
             ? new Date(year, month, 16)
@@ -321,8 +324,23 @@ let NominaService = class NominaService {
             : `${year}-${String(month + 1).padStart(2, '0')}-${quincena}`;
         return { inicio, fin, periodo: periodoCanon };
     }
+    async validarPeriodoUnico(tipoPeriodo, periodo) {
+        const existente = await this.prisma.nomina.findFirst({
+            where: {
+                tipo_periodo: tipoPeriodo,
+                periodo,
+                eliminada: false,
+            },
+        });
+        if (existente) {
+            throw new common_1.BadRequestException(`Ya existe una nómina activa de tipo '${tipoPeriodo}' para el periodo '${periodo}'. Elimínala o cambia el periodo antes de crear una nueva.`);
+        }
+    }
     async crearNomina(dto) {
-        const crear = async (data) => this.prisma.nomina.create({ data });
+        const crear = async (data) => {
+            await this.validarPeriodoUnico(data.tipo_periodo, data.periodo);
+            return this.prisma.nomina.create({ data });
+        };
         let inicio;
         let fin;
         let periodo = dto.periodo?.trim();
@@ -334,17 +352,17 @@ let NominaService = class NominaService {
         }
         else {
             if (!dto.fecha_inicio || !dto.fecha_fin) {
-                throw new common_1.BadRequestException('Debe enviar periodo o las fechas fecha_inicio y fecha_fin.');
+                throw new common_1.BadRequestException('Debe enviar el campo periodo o ambos campos fecha_inicio y fecha_fin en formato ISO.');
             }
             inicio = new Date(dto.fecha_inicio);
             fin = new Date(dto.fecha_fin);
             periodo = dto.periodo || '';
         }
         if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
-            throw new common_1.BadRequestException('Fechas inválidas para la nómina.');
+            throw new common_1.BadRequestException('Fechas inválidas para la nómina. Use formato ISO, por ejemplo 2026-05-01.');
         }
         if (inicio > fin) {
-            throw new common_1.BadRequestException('La fecha_inicio no puede ser mayor que fecha_fin');
+            throw new common_1.BadRequestException('La fecha de inicio no puede ser posterior a la fecha final. Corrige el rango.');
         }
         if (dto.periodo) {
             const nomina = await crear({
@@ -427,7 +445,7 @@ let NominaService = class NominaService {
         this.validarNominaEditable(nomina);
         await this.prisma.nomina.update({
             where: { id },
-            data: { estado: 'eliminada' },
+            data: { eliminada: true },
         });
     }
     async cambiarEstado(id, estado) {
@@ -564,7 +582,12 @@ let NominaService = class NominaService {
     }
     async listarNominas() {
         const nominas = await this.prisma.nomina.findMany({
-            where: { NOT: { estado: 'eliminada' } },
+            where: {
+                NOT: [
+                    { eliminada: true },
+                    { estado: 'eliminada' },
+                ],
+            },
             orderBy: { fecha_creacion: 'desc' },
             include: {
                 detalle_nomina: {

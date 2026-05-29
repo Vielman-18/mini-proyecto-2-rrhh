@@ -28,7 +28,7 @@ const [detalleSeleccionado, setDetalleSeleccionado] =
   const [showDeptPanel, setShowDeptPanel] = useState(false);
 
   const normalizeEstado = (estado: string) => {
-    if (!estado || estado === 'abierta') return 'activa';
+    if (!estado || estado === 'abierta' || estado === 'activo') return 'activa';
     if (estado === 'inactiva') return 'procesada';
     return estado;
   };

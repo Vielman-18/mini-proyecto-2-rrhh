@@ -42,7 +42,7 @@ const [puestos, setPuestos] = useState<any[]>([]);
   const [confirmacionAccion, setConfirmacionAccion] = useState<(() => Promise<void>) | null>(null);
 
   const normalizeEstadoNomina = (estado?: string) => {
-    if (!estado || estado === 'abierta') return 'activa';
+    if (!estado || estado === 'abierta' || estado === 'activo') return 'activa';
     if (estado === 'inactiva') return 'procesada';
     return estado;
   };
@@ -435,9 +435,22 @@ const crearNomina = async (): Promise<boolean> => {
   try {
     setLoading(true);
 
-    
-    const periodosACrear = tipoPeriodo === 'quincenal' 
-      ? [`${mes}${anio}Q1`, `${mes}${anio}Q2`] 
+    const ahora = new Date();
+    const mesActual = ahora.getMonth();
+    const anioActual = String(ahora.getFullYear());
+    const diaActual = ahora.getDate();
+
+    const esMesActual =
+      tipoPeriodo === 'quincenal' &&
+      anio === anioActual &&
+      ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'].indexOf(mes) === mesActual;
+
+    const periodosACrear = tipoPeriodo === 'quincenal'
+      ? esMesActual
+        ? [
+            `${mes}${anio}${diaActual > 15 ? 'Q2' : 'Q1'}`,
+          ]
+        : [`${mes}${anio}Q1`, `${mes}${anio}Q2`]
       : [`${mes}${anio}`];
 
     let ultimaNominaId = '';
@@ -465,11 +478,15 @@ const crearNomina = async (): Promise<boolean> => {
     setMes('mayo');
     setAnio('2026');
     setQuincena('Q1'); 
-    toast.success(
+
+    const mensajeExito =
       tipoPeriodo === 'quincenal'
-        ? `Se generaron Q1 y Q2 para ${mes} ${anio}`
-        : 'Nómina generada con éxito'
-    );
+        ? periodosACrear.length === 1
+          ? `Se generó ${periodosACrear[0]} para ${mes} ${anio}`
+          : `Se generaron Q1 y Q2 para ${mes} ${anio}`
+        : 'Nómina generada con éxito';
+
+    toast.success(mensajeExito);
 
     await cargarDatos();
     await cargarDetalles(ultimaNominaId);
