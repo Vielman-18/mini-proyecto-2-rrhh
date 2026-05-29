@@ -33,9 +33,7 @@ export function useNomina() {
   const [loading, setLoading] = useState(false);
   const [estadoActual, setEstadoActual] = useState<string>('');
   const [departamentoId, setDepartamentoId] = useState('');
-
-const [puestoId, setPuestoId] = useState<string>('');
-const [puestos, setPuestos] = useState<any[]>([]);
+  const [puestos, setPuestos] = useState<any[]>([]);
   const [confirmacionOpen, setConfirmacionOpen] = useState(false);
   const [confirmacionTitulo, setConfirmacionTitulo] = useState('');
   const [confirmacionMensaje, setConfirmacionMensaje] = useState('');
@@ -160,9 +158,6 @@ const obtenerConteoEmpleadosPorPuesto = (
   ).length;
 };
 
-// =========================
-// EJECUTAR AGREGAR POR PUESTO
-// =========================
 
 const ejecutarAgregarPorPuesto = async (
   puestoId: number,
@@ -199,9 +194,6 @@ const ejecutarAgregarPorPuesto = async (
   }
 };
 
-// =========================
-// MÉTODO PRINCIPAL
-// =========================
 
 const agregarEmpleadosPorPuesto = async (
   puestoId: number,

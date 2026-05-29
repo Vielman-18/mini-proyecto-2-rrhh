@@ -260,8 +260,7 @@ const [detalleSeleccionado, setDetalleSeleccionado] =
       </>
     )}
   </div>
-
-</div>
+     </div>
           </div>
 
           {/* KPIs RESUMEN */}
@@ -291,11 +290,10 @@ const [detalleSeleccionado, setDetalleSeleccionado] =
                {h.loading ? '...' : 'Exportar PDF'}
              </button>
           </div>
-
-          {/* TABLA DE DETALLES */}
-   <div className="overflow-x-auto">
+{/* TABLA DE DETALLES */}
+<div className="overflow-x-auto">
   <table className="w-full text-left">
-    
+
     <thead className="text-slate-400 text-xs uppercase bg-white/5">
       <tr>
         <th className="py-4 px-4">Empleado</th>
@@ -378,6 +376,14 @@ const [detalleSeleccionado, setDetalleSeleccionado] =
 
           {/* ACCIONES */}
           <td className="py-4 text-right px-4 space-y-2">
+
+            <button
+             onClick={() => h.generarPdfEmpleado(d.id)}
+              className="w-full px-3 py-1.5 rounded-xl text-sm bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
+            >
+              PDF
+            </button>
+
             <button
               onClick={() => h.solicitarEliminarEmpleado(d.empleado_id)}
               disabled={!isNominaEditable || h.loading}
@@ -385,6 +391,7 @@ const [detalleSeleccionado, setDetalleSeleccionado] =
             >
               Remover
             </button>
+
             <button
               onClick={() => {
                 setDetalleSeleccionado(d.id);
@@ -394,6 +401,7 @@ const [detalleSeleccionado, setDetalleSeleccionado] =
             >
               Historial
             </button>
+
           </td>
 
         </tr>
@@ -409,26 +417,44 @@ const [detalleSeleccionado, setDetalleSeleccionado] =
     </div>
   )}
 </div>
-        </div>
-      )}
+</div>
+)}
 
-      {/* MODALES */}
-      <HistorialNominaModal
-        isOpen={historialOpen}
-        onClose={() => setHistorialOpen(false)}
-        detalleId={detalleSeleccionado}
-      />
-      <ModalPeriodo isOpen={mOpen} onClose={() => setMOpen(false)} h={h} />
-      <ModalDetalleEmpleado isOpen={detalleOpen} onClose={() => setDetalleOpen(false)} detalle={detalle} h={h} />
-      <DrawerEmpleado isOpen={dOpen} onClose={() => setDOpen(false)} h={h} />
-      <ModalConfirmacionAction 
-        isOpen={h.confirmacionOpen} 
-        onClose={() => h.setConfirmacionOpen(false)} 
-        onConfirm={() => h.confirmacionAccion && h.confirmacionAccion()}
-        titulo={h.confirmacionTitulo}
-        mensaje={h.confirmacionMensaje}
-        loading={h.loading}
-      />
-    </div>
-  );
+{/* MODALES */}
+<HistorialNominaModal
+  isOpen={historialOpen}
+  onClose={() => setHistorialOpen(false)}
+  detalleId={detalleSeleccionado}
+/>
+
+<ModalPeriodo
+  isOpen={mOpen}
+  onClose={() => setMOpen(false)}
+  h={h}
+/>
+
+<ModalDetalleEmpleado
+  isOpen={detalleOpen}
+  onClose={() => setDetalleOpen(false)}
+  detalle={detalle}
+  h={h}
+/>
+
+<DrawerEmpleado
+  isOpen={dOpen}
+  onClose={() => setDOpen(false)}
+  h={h}
+/>
+
+<ModalConfirmacionAction
+  isOpen={h.confirmacionOpen}
+  onClose={() => h.setConfirmacionOpen(false)}
+  onConfirm={() => h.confirmacionAccion && h.confirmacionAccion()}
+  titulo={h.confirmacionTitulo}
+  mensaje={h.confirmacionMensaje}
+  loading={h.loading}
+/>
+
+</div>
+);
 }

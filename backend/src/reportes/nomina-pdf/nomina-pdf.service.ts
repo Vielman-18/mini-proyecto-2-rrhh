@@ -1,3 +1,4 @@
+
 import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
@@ -27,23 +28,45 @@ export class NominaPdfService {
     const empleado = detalle.empleados;
     const nomina = detalle.nomina;
 
+    // =========================
+    // CALCULOS FRONTEND
+    // =========================
+
     const salarioBase = Number(detalle.salario_base || 0);
+
     const bonificaciones = Number(detalle.bonificaciones || 0);
+
     const comisiones = Number(detalle.comisiones || 0);
-    const horasExtra = Number(detalle.monto_horas_extra || 0);
+
+    const horasExtra = Number(
+      detalle.monto_horas_extra ||
+      detalle.valor_horas_extra ||
+      0,
+    );
+
+    const BONO_INCENTIVO = 250;
 
     const ingresos =
       salarioBase +
+      BONO_INCENTIVO +
       bonificaciones +
       comisiones +
       horasExtra;
 
+    const igss =
+      salarioBase * 0.0483;
+
     const descuentos =
-      Number(detalle.igss || 0) +
-      Number(detalle.irtra || 0) +
+      igss +
       Number(detalle.descuentos_legales || 0);
 
-    const salarioFinal = Number(detalle.salario_final || 0);
+    const salarioFinal =
+      salarioBase +
+      BONO_INCENTIVO +
+      bonificaciones +
+      comisiones +
+      horasExtra -
+      descuentos;
 
     const crearBoleta = (yStart: number) => {
 
@@ -92,7 +115,7 @@ export class NominaPdfService {
       doc.text(`Q${salarioBase.toFixed(2)}`, 220, yStart + 190);
 
       doc.text('IGSS', 330, yStart + 190);
-      doc.text(`Q${Number(detalle.igss || 0).toFixed(2)}`, 470, yStart + 190);
+      doc.text(`Q${igss.toFixed(2)}`, 470, yStart + 190);
 
       doc.text('BONIFICACIONES', 60, yStart + 210);
       doc.text(`Q${bonificaciones.toFixed(2)}`, 220, yStart + 210);
@@ -127,11 +150,14 @@ export class NominaPdfService {
     };
 
     crearBoleta(40);
+
     doc.dash(1, { space: 4 })
       .moveTo(40, 430)
       .lineTo(560, 430)
       .stroke();
+
     doc.undash();
+
     crearBoleta(460);
 
     doc.end();
@@ -188,10 +214,26 @@ export class NominaPdfService {
     const emp = d.empleados;
 
     const base = Number(d.salario_base || 0);
-    const bonos = Number(d.bonificaciones || 0);
-    const otros = Number(d.comisiones || 0) + Number(d.monto_horas_extra || 0);
 
-    const devengado = base + bonos + otros;
+    const bonos =
+      Number(d.bonificaciones || 0) + 250;
+
+    const otros =
+      Number(d.comisiones || 0) +
+      Number(d.monto_horas_extra || 0);
+
+    const igss =
+      base * 0.0483;
+
+    const descuentos =
+      igss +
+      Number(d.descuentos_legales || 0);
+
+    const devengado =
+      base +
+      bonos +
+      otros -
+      descuentos;
 
     const bg = i % 2 === 0 ? '#FFFFFF' : '#F1F5F9';
 
@@ -225,3 +267,4 @@ export class NominaPdfService {
   doc.end();
 }
 }
+
