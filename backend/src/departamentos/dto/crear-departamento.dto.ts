@@ -11,19 +11,21 @@ export class CrearDepartamentoDto {
   @IsString()
   nombre!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Encargado de contratación y personal',
   })
+  @IsOptional()
   @IsString()
-  descripcion!: string;
+  descripcion?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 1,
     description: 'ID del usuario que crea el departamento',
   })
+  @IsOptional()
   @IsInt()
   @Type(() => Number)
-  creado_por!: number;
+  creado_por?: number;
 
   @ApiPropertyOptional({
     example: 'activo',
