@@ -1,4 +1,3 @@
-
 import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { Response } from 'express';
@@ -20,27 +19,21 @@ export class NominaPdfService {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename=boleta_${detalle.empleados.id}.pdf`,
+      `attachment; filename=boleta_${detalle?.empleados?.id ?? 'empleado'}.pdf`,
     );
 
     doc.pipe(res);
 
-    const empleado = detalle.empleados;
-    const nomina = detalle.nomina;
+    const empleado = detalle.empleados || {};
+    const nomina = detalle.nomina || {};
 
-    // =========================
-    // CALCULOS FRONTEND
-    // =========================
-
-    const salarioBase = Number(detalle.salario_base || 0);
-
-    const bonificaciones = Number(detalle.bonificaciones || 0);
-
-    const comisiones = Number(detalle.comisiones || 0);
+    const salarioBase = Number(detalle.salario_base ?? 0);
+    const bonificaciones = Number(detalle.bonificaciones ?? 0);
+    const comisiones = Number(detalle.comisiones ?? 0);
 
     const horasExtra = Number(
-      detalle.monto_horas_extra ||
-      detalle.valor_horas_extra ||
+      detalle.monto_horas_extra ??
+      detalle.valor_horas_extra ??
       0,
     );
 
@@ -53,20 +46,13 @@ export class NominaPdfService {
       comisiones +
       horasExtra;
 
-    const igss =
-      salarioBase * 0.0483;
+    const igss = salarioBase * 0.0483;
 
     const descuentos =
       igss +
-      Number(detalle.descuentos_legales || 0);
+      Number(detalle.descuentos_legales ?? 0);
 
-    const salarioFinal =
-      salarioBase +
-      BONO_INCENTIVO +
-      bonificaciones +
-      comisiones +
-      horasExtra -
-      descuentos;
+    const salarioFinal = ingresos - descuentos;
 
     const crearBoleta = (yStart: number) => {
 
@@ -86,27 +72,17 @@ export class NominaPdfService {
 
       doc.fontSize(9);
 
-      doc.text(`ID: ${empleado.id}`, 55, yStart + 65);
-
-      doc.text(`DPI: ${empleado.dpi || 'N/A'}`, 55, yStart + 82);
-
-      doc.text(
-        `Nombre: ${empleado.nombres} ${empleado.apellidos}`,
-        55,
-        yStart + 99,
-      );
-
-      doc.text(
-        `Puesto: ${empleado.cargo || 'Empleado'}`,
-        55,
-        yStart + 116,
-      );
+      doc.text(`ID: ${empleado.id ?? 'N/A'}`, 55, yStart + 65);
+      doc.text(`DPI: ${empleado.dpi ?? 'N/A'}`, 55, yStart + 82);
+      doc.text(`Nombre: ${empleado.nombres ?? ''} ${empleado.apellidos ?? ''}`, 55, yStart + 99);
+      doc.text(`Puesto: ${empleado.puestos?.nombre ?? empleado.cargo ?? 'Empleado'}`, 55, yStart + 116);
 
       doc.moveTo(40, yStart + 155)
         .lineTo(560, yStart + 155)
         .stroke();
 
-      doc.font('Helvetica-Bold').text('INGRESOS', 130, yStart + 165);
+      doc.font('Helvetica-Bold');
+      doc.text('INGRESOS', 130, yStart + 165);
       doc.text('DESCUENTOS', 360, yStart + 165);
 
       doc.font('Helvetica');
@@ -120,14 +96,17 @@ export class NominaPdfService {
       doc.text('BONIFICACIONES', 60, yStart + 210);
       doc.text(`Q${bonificaciones.toFixed(2)}`, 220, yStart + 210);
 
-      doc.text('IRTRA', 330, yStart + 210);
-      doc.text(`Q${Number(detalle.irtra || 0).toFixed(2)}`, 470, yStart + 210);
+      doc.text('BONO INCENTIVO', 330, yStart + 210);
+      doc.text(`Q${BONO_INCENTIVO.toFixed(2)}`, 470, yStart + 210);
 
       doc.text('HORAS EXTRA', 60, yStart + 230);
       doc.text(`Q${horasExtra.toFixed(2)}`, 220, yStart + 230);
 
+      doc.text('COMISIONES', 60, yStart + 250);
+      doc.text(`Q${comisiones.toFixed(2)}`, 220, yStart + 250);
+
       doc.text('DESC. LEGALES', 330, yStart + 230);
-      doc.text(`Q${Number(detalle.descuentos_legales || 0).toFixed(2)}`, 470, yStart + 230);
+      doc.text(`Q${Number(detalle.descuentos_legales ?? 0).toFixed(2)}`, 470, yStart + 230);
 
       doc.moveTo(40, yStart + 265)
         .lineTo(560, yStart + 265)
@@ -146,7 +125,7 @@ export class NominaPdfService {
         .stroke();
 
       doc.fontSize(9)
-        .text(`${empleado.nombres} ${empleado.apellidos}`, 220, yStart + 395);
+        .text(`${empleado.nombres ?? ''} ${empleado.apellidos ?? ''}`, 220, yStart + 395);
     };
 
     crearBoleta(40);
@@ -163,108 +142,85 @@ export class NominaPdfService {
     doc.end();
   }
 
- async generar(nomina: any, detalles: any[], totalPlanilla: number, res: Response) {
-  const doc = new PDFDocument({
-    margin: 40,
-    size: 'A4',
-    bufferPages: true,
-  });
+  async generar(nomina: any, detalles: any[], totalPlanilla: number, res: Response) {
+    const doc = new PDFDocument({
+      margin: 40,
+      size: 'A4',
+      bufferPages: true,
+    });
 
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader(
-    'Content-Disposition',
-    `attachment; filename=nomina_${nomina.periodo}.pdf`,
-  );
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=nomina_${nomina.periodo}.pdf`,
+    );
 
-  doc.pipe(res);
+    doc.pipe(res);
 
-  // ===== ENCABEZADO ESTILO SAT =====
-  doc.fontSize(12).font('Helvetica-Bold')
-    .text('INFORMACIÓN PÚBLICA DE OFICIO', { align: 'center' });
+    doc.fontSize(12).font('Helvetica-Bold')
+      .text('INFORMACIÓN PÚBLICA DE OFICIO', { align: 'center' });
 
-  doc.fontSize(10).font('Helvetica')
-    .text('Reporte de Nómina - Renglón Presupuestario 011', { align: 'center' });
+    doc.fontSize(10).font('Helvetica')
+      .text('Reporte de Nómina - Renglón Presupuestario 011', { align: 'center' });
 
-  doc.text(`Periodo: ${nomina.periodo}`, { align: 'center' });
+    doc.text(`Periodo: ${nomina.periodo}`, { align: 'center' });
 
-  doc.moveDown(2);
+    doc.moveDown(2);
 
-  // ===== TABLA HEADER =====
-  const startY = 120;
+    const startY = 120;
 
-  doc.fontSize(8).font('Helvetica-Bold');
+    doc.fontSize(8).font('Helvetica-Bold');
 
-  doc.rect(40, startY, 520, 20).fill('#1D4ED8');
+    doc.rect(40, startY, 520, 20).fill('#1D4ED8');
+    doc.fillColor('white');
 
-  doc.fillColor('white');
+    doc.text('No.', 45, startY + 5);
+    doc.text('NIT', 70, startY + 5);
+    doc.text('NOMBRE', 130, startY + 5);
+    doc.text('PUESTO', 250, startY + 5);
+    doc.text('BASE', 330, startY + 5);
+    doc.text('BONOS', 380, startY + 5);
+    doc.text('OTROS', 430, startY + 5);
+    doc.text('DEVENGADO', 490, startY + 5);
 
-  doc.text('No.', 45, startY + 5);
-  doc.text('NIT', 70, startY + 5);
-  doc.text('NOMBRE', 130, startY + 5);
-  doc.text('PUESTO', 250, startY + 5);
-  doc.text('BASE', 330, startY + 5);
-  doc.text('BONOS', 380, startY + 5);
-  doc.text('OTROS', 430, startY + 5);
-  doc.text('DEVENGADO', 490, startY + 5);
+    let y = startY + 25;
 
-  // ===== FILAS =====
-  let y = startY + 25;
+    detalles.forEach((d, i) => {
+      const emp = d.empleados || {};
 
-  detalles.forEach((d, i) => {
-    const emp = d.empleados;
+      const base = Number(d.salario_base ?? 0);
+      const bonos = Number(d.bonificaciones ?? 0) + 250;
 
-    const base = Number(d.salario_base || 0);
+      const otros =
+        Number(d.comisiones ?? 0) +
+        Number(d.monto_horas_extra ?? 0);
 
-    const bonos =
-      Number(d.bonificaciones || 0) + 250;
+      const igss = base * 0.0483;
 
-    const otros =
-      Number(d.comisiones || 0) +
-      Number(d.monto_horas_extra || 0);
+      const descuentos =
+        igss +
+        Number(d.descuentos_legales ?? 0);
 
-    const igss =
-      base * 0.0483;
+      const devengado =
+        base + bonos + otros - descuentos;
 
-    const descuentos =
-      igss +
-      Number(d.descuentos_legales || 0);
+      const bg = i % 2 === 0 ? '#FFFFFF' : '#F1F5F9';
 
-    const devengado =
-      base +
-      bonos +
-      otros -
-      descuentos;
+      doc.rect(40, y - 2, 520, 18).fill(bg);
+      doc.fillColor('black').fontSize(7).font('Helvetica');
 
-    const bg = i % 2 === 0 ? '#FFFFFF' : '#F1F5F9';
+      doc.text(i + 1, 45, y);
+      doc.text(emp.dpi ?? 'N/A', 70, y);
+      doc.text(`${emp.nombres ?? ''} ${emp.apellidos ?? ''}`, 130, y);
+      doc.text(emp.puestos?.nombre ?? emp.cargo ?? 'N/A', 250, y);
+      doc.text(`Q${base.toFixed(2)}`, 330, y);
+      doc.text(`Q${bonos.toFixed(2)}`, 380, y);
+      doc.text(`Q${otros.toFixed(2)}`, 430, y);
+      doc.text(`Q${devengado.toFixed(2)}`, 490, y);
 
-    doc.rect(40, y - 2, 520, 18).fill(bg);
+      y += 18;
+    });
 
-    doc.fillColor('black').fontSize(7).font('Helvetica');
-
-    doc.text(i + 1, 45, y);
-    doc.text(emp.dpi || 'N/A', 70, y);
-    doc.text(`${emp.nombres} ${emp.apellidos}`, 130, y);
-    doc.text(emp.cargo || 'N/A', 250, y);
-
-    doc.text(`Q${base.toFixed(2)}`, 330, y);
-    doc.text(`Q${bonos.toFixed(2)}`, 380, y);
-    doc.text(`Q${otros.toFixed(2)}`, 430, y);
-    doc.text(`Q${devengado.toFixed(2)}`, 490, y);
-
-    y += 18;
-
-    if (y > 720) {
-      doc.addPage();
-      y = 60;
-    }
-  });
-
-  // ===== TOTAL FINAL =====
-  doc.moveDown(2);
-  doc.fontSize(10).font('Helvetica-Bold')
-    .text(`TOTAL PLANILLA: Q${totalPlanilla.toFixed(2)}`, 350, y + 20);
-
-  doc.end();
+    doc.end();
+  }
 }
-}
-

@@ -252,8 +252,11 @@ let NominaService = class NominaService {
         const detalle = await this.prisma.detalle_nomina.findUnique({
             where: { id: detalleId },
             include: {
-                empleados: true,
-                nomina: true,
+                empleados: {
+                    include: {
+                        puestos: true,
+                    }
+                }
             },
         });
         if (!detalle) {
@@ -684,7 +687,7 @@ let NominaService = class NominaService {
         }
         const detalles = await this.prisma.detalle_nomina.findMany({
             where: { nomina_id: nominaId },
-            include: { empleados: true },
+            include: { empleados: { include: { puestos: true } } },
         });
         const totalPlanilla = detalles.reduce((acc, d) => acc + Number(d.salario_final || 0), 0);
         await this.prisma.logspdf.create({

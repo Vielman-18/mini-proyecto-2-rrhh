@@ -574,7 +574,6 @@ const detallesProcesados = useMemo(() => {
 
     const igss = salarioBase * IGSS_RATE;
 
-    // DEDUCCIONES MANUALES
     const descuentosLegales = Number(
       d.descuentos_legales ||
       d.deducciones ||
@@ -599,20 +598,19 @@ const detallesProcesados = useMemo(() => {
     return {
       ...d,
 
-      // extras
       bono_incentivo: BONO_INCENTIVO,
       valor_horas_extra: valorHorasExtra,
       total_extras: totalExtras,
 
-      // deducciones
+   
       igss,
       descuentos_legales: descuentosLegales,
       deducciones: totalDeducciones,
 
-      // patronal
+   
       irtra_patronal: irtraPatronal,
 
-      // final
+    
       salario_final: salarioFinal,
     };
   });
@@ -811,7 +809,7 @@ const eliminarNomina = async (id: number) => {
     agregarEmpleadosPorDepartamento,
     departamentos,
 
-    // Modal de confirmación
+    
     confirmacionOpen,
     setConfirmacionOpen,
     confirmacionTitulo,
