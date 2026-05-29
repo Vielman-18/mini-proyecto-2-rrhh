@@ -1,19 +1,35 @@
-import {IsInt, IsString, IsOptional, IsNumber} from 'class-validator';
+import { IsInt, IsString, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
-
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CrearDepartamentoDto {
+
+  @ApiProperty({
+    example: 'Recursos Humanos',
+    description: 'Nombre del departamento',
+  })
   @IsString()
   nombre!: string;
 
+  @ApiProperty({
+    example: 'Encargado de contratación y personal',
+  })
   @IsString()
-  descripcion! : string;
+  descripcion!: string;
 
+  @ApiProperty({
+    example: 1,
+    description: 'ID del usuario que crea el departamento',
+  })
   @IsInt()
   @Type(() => Number)
   creado_por!: number;
 
+  @ApiPropertyOptional({
+    example: 'activo',
+    default: 'activo',
+  })
   @IsOptional()
   @IsString()
-  estado! : string;
+  estado?: string;
 }
