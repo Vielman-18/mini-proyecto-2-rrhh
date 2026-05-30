@@ -27,6 +27,7 @@ export default function Login() {
       localStorage.setItem('token', token);
       localStorage.setItem('role', rolUsuario);
       localStorage.setItem('correo', correo);
+      localStorage.setItem('userId', String(res.data.userId));
 
       toast.success('Inicio de sesión correcto');
 
