@@ -6,6 +6,7 @@ import Nomina from './pages/Nomina';
 import Expedientes from './pages/Expedientes';
 import Reportes from './pages/Reportes';
 import Academico from './pages/Academico.tsx';
+import DetalleNomina from './pages/DetalleNomina.tsx';
 
 import Sidebar from './components/Sidebar';
 
@@ -42,10 +43,12 @@ function RRHHLayout() {
           <Route index element={<RRhhHome />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="empleados" element={<Empleados />} />
+          <Route path="detalle-nomina/:id" element={<DetalleNomina />} />
           <Route path="nomina" element={<Nomina />} />
           <Route path="expedientes" element={<Expedientes />} />
           <Route path="reportes" element={<Reportes />} />
           <Route path="academico" element={<Academico />} />
+
           <Route path="*" element={<Navigate to="/rrhh" replace />} />
         </Routes>
       </main>

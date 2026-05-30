@@ -44,14 +44,22 @@ let EmpleadosService = class EmpleadosService {
     }
     async listar() {
         return this.prisma.empleados.findMany({
+            include: {
+                departamentos: true,
+                puestos: true,
+            },
             orderBy: {
-                id: 'asc',
+                nombres: 'asc',
             },
         });
     }
     async buscarPorId(id) {
         const empleado = await this.prisma.empleados.findUnique({
             where: { id },
+            include: {
+                departamentos: true,
+                puestos: true,
+            },
         });
         if (!empleado) {
             throw new common_1.NotFoundException('Empleado no encontrado');
@@ -72,7 +80,9 @@ let EmpleadosService = class EmpleadosService {
                 direccion: dto.direccion,
                 email: dto.email,
                 telefono: dto.telefono,
-                salario: dto.salario !== undefined ? Number(dto.salario) : undefined,
+                salario: dto.salario !== undefined
+                    ? Number(dto.salario)
+                    : undefined,
                 puesto_id: dto.puesto_id,
                 departamento_id: dto.departamento_id,
             },

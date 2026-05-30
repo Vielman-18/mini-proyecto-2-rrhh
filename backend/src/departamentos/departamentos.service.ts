@@ -6,12 +6,12 @@ import {CrearDepartamentoDto} from './dto/crear-departamento.dto';
 export class DepartamentosService {
   constructor(private readonly prisma: PrismaService) {}    
 
-async crear(dto: CrearDepartamentoDto) {
+  async crear(dto: CrearDepartamentoDto) {
     return this.prisma.departamentos.create({
       data: {
         nombre: dto.nombre,
-        creado_por: dto.creado_por,
-        descripcion: dto.descripcion,
+        creado_por: dto.creado_por || 1,
+        descripcion: dto.descripcion || '',
         estado: dto.estado || 'activo',
       },
     });
@@ -19,15 +19,13 @@ async crear(dto: CrearDepartamentoDto) {
 
   async Listar() {
     return this.prisma.departamentos.findMany({
-        orderBy: {
-            id: 'asc',
-        },
+      orderBy: { id: 'asc' },
     });
   }
 
   async buscarPorId(id: number) {
-    const departamento = this.prisma.departamentos.findUnique({
-        where: {id},
+    const departamento = await this.prisma.departamentos.findUnique({
+      where: {id},
     });
     if (!departamento) {
       throw new NotFoundException('Departamento no encontrado');
@@ -38,16 +36,15 @@ async crear(dto: CrearDepartamentoDto) {
   async eliminar(id: number) {
     await this.buscarPorId(id);
     return this.prisma.departamentos.delete({
-        where: {id},
+      where: {id},
     });
   }
 
   async cambiarEstado(id: number, estado: string) {
     await this.buscarPorId(id);
     return this.prisma.departamentos.update({
-        where: {id},
-        data: {estado},
+      where: {id},
+      data: {estado},
     });
   }
-
- }
+}

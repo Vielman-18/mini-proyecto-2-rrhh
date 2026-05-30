@@ -18,33 +18,26 @@ export class AuthService {
   ) {}
 
   async retirarAcceso(empleadoId: number) {
-  const empleado = await this.prisma.empleados.findUnique({
-    where: { id: empleadoId },
-  });
-
-  if (!empleado || !empleado.usuario_id) {
-    throw new NotFoundException('Este empleado no tiene acceso activo');
-  }
-
-  await this.prisma.$transaction([
-    this.prisma.empleados.update({
+    const empleado = await this.prisma.empleados.findUnique({
       where: { id: empleadoId },
-      data: {
-        usuario_id: null,
-      },
-    }),
+    });
 
-    this.prisma.usuarios.delete({
-      where: {
-        id: empleado.usuario_id,
-      },
-    }),
-  ]);
+    if (!empleado || !empleado.usuario_id) {
+      throw new NotFoundException('Este empleado no tiene acceso activo');
+    }
 
-  return {
-    message: 'Acceso retirado correctamente',
-  };
-}
+    await this.prisma.$transaction([
+      this.prisma.empleados.update({
+        where: { id: empleadoId },
+        data: { usuario_id: null },
+      }),
+      this.prisma.usuarios.delete({
+        where: { id: empleado.usuario_id },
+      }),
+    ]);
+
+    return { message: 'Acceso retirado correctamente' };
+  }
 
   async register(dto: RegisterDto) {
     const exists = await this.prisma.usuarios.findUnique({
@@ -73,10 +66,7 @@ export class AuthService {
     };
   }
 
-  async vincularUsuario(
-    id: number,
-    body: { usuarioId: number; correo: string },
-  ) {
+  async vincularUsuario(id: number, body: { usuarioId: number; correo: string }) {
     return this.prisma.empleados.update({
       where: { id },
       data: {
@@ -101,10 +91,6 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales incorrectas');
     }
 
-    if (user.rol.toLowerCase() !== dto.rol.toLowerCase()) {
-      throw new UnauthorizedException('El rol no corresponde al usuario');
-    }
-
     const payload = {
       sub: user.id,
       correo: user.correo,
@@ -114,6 +100,7 @@ export class AuthService {
     return {
       token: this.jwtService.sign(payload),
       rol: user.rol,
+      userId: user.id,
     };
   }
 }

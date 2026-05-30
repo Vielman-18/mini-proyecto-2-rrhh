@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Response } from 'express';
+import { NominaPdfService } from './nomina-pdf/general-pdf.service';
+
 
 @Injectable()
 export class ReportesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly nominaPdfService: NominaPdfService,
+  ) {}
 
   async obtenerReportesNomina(periodo?: string) {
     const detalles = await this.prisma.detalle_nomina.findMany({
@@ -24,6 +30,7 @@ export class ReportesService {
     });
 
     return detalles.map((detalle) => ({
+      detalleId: detalle.id,
       empleadoId: detalle.empleado_id,
       nombres: detalle.empleados.nombres,
       apellidos: detalle.empleados.apellidos,
@@ -61,9 +68,7 @@ export class ReportesService {
         documentos: true,
         estado_expediente: true,
       },
-      orderBy: {
-        id: 'asc',
-      },
+      orderBy: { id: 'asc' },
     });
 
     const documentosObligatorios = [
@@ -102,9 +107,7 @@ export class ReportesService {
       include: {
         registro_academico: true,
       },
-      orderBy: {
-        id: 'asc',
-      },
+      orderBy: { id: 'asc' },
     });
 
     return empleados.map((empleado) => ({
@@ -120,15 +123,26 @@ export class ReportesService {
     }));
   }
 
+  async generarTodasNominas(res: Response) {
+    const nominas = await this.prisma.nomina.findMany({
+      include: {
+        detalle_nomina: {
+          include: { empleados: { include: { puestos: true } } },
+        },
+      },
+      orderBy: { fecha_creacion: 'desc' },
+    });
+
+    return this.nominaPdfService.generarTodasNominas(nominas, res);
+  }
+
   async obtenerReporteContratacion() {
     const empleados = await this.prisma.empleados.findMany({
       include: {
         documentos: true,
         registro_academico: true,
       },
-      orderBy: {
-        id: 'asc',
-      },
+      orderBy: { id: 'asc' },
     });
 
     return empleados.map((empleado) => {

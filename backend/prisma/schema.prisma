@@ -20,7 +20,6 @@ model ajustes_nomina {
   usuarios          usuarios       @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ajuste_usuario")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model departamentos {
   id             Int         @id @default(autoincrement())
   nombre         String      @unique @db.VarChar(100)
@@ -54,18 +53,19 @@ model detalle_nomina {
 }
 
 model documentos {
-  id             Int       @id @default(autoincrement())
-  empleado_id    Int
-  usuario_id     Int
-  nombre_archivo String    @db.VarChar(255)
-  ruta_archivo   String
-  tipo_documento String    @db.VarChar(100)
-  fecha_carga    DateTime? @default(now()) @db.Timestamp(6)
-  empleados      empleados @relation(fields: [empleado_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_documento_empleado")
-  usuarios       usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_documento_usuario")
+  id              Int       @id @default(autoincrement())
+  empleado_id     Int
+  usuario_id      Int
+  nombre_archivo  String    @db.VarChar(255)
+  ruta_archivo    String
+  tipo_documento  String    @db.VarChar(100)
+  fecha_carga     DateTime? @default(now()) @db.Timestamp(6)
+  archivo_binario Bytes?
+  arcivo_binario  Bytes?
+  empleados       empleados @relation(fields: [empleado_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_documento_empleado")
+  usuarios        usuarios  @relation(fields: [usuario_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_documento_usuario")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model empleados {
   id                 Int                  @id @default(autoincrement())
   usuario_id         Int?                 @unique
@@ -90,7 +90,6 @@ model empleados {
   registro_academico registro_academico[]
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model estado_expediente {
   id             Int       @id @default(autoincrement())
   empleado_id    Int       @unique
@@ -109,7 +108,6 @@ model logspdf {
   nomina           nomina    @relation(fields: [nomina_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_logspdf_nomina")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model nomina {
   id             Int              @id @default(autoincrement())
   tipo_periodo   String           @db.VarChar(20)
@@ -118,6 +116,7 @@ model nomina {
   fecha_fin      DateTime         @db.Date
   estado         String?          @default("abierta") @db.VarChar(20)
   fecha_creacion DateTime?        @default(now()) @db.Timestamp(6)
+  eliminada      Boolean?         @default(false)
   detalle_nomina detalle_nomina[]
   logspdf        logspdf[]
 }
@@ -131,13 +130,11 @@ model parametros_nomina {
   fecha_creacion DateTime? @default(now()) @db.Timestamp(6)
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model puestos {
   id              Int           @id @default(autoincrement())
   departamento_id Int
   nombre          String        @db.VarChar(100)
   descripcion     String?
-  salario_base    Decimal?      @db.Decimal(10, 2)
   estado          String?       @default("activo") @db.VarChar(20)
   creado_por      Int
   fecha_creacion  DateTime?     @default(now()) @db.Timestamp(6)
@@ -156,7 +153,6 @@ model registro_academico {
   empleados        empleados @relation(fields: [empleado_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_academico_empleado")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model usuarios {
   id             Int              @id @default(autoincrement())
   nombre         String           @db.VarChar(100)
