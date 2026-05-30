@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'https://rrhh-backend-jr1g.onrender.com';
+
 const api = axios.create({
-  baseURL: 'https://rrhh-backend-jr1g.onrender.com',
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 api.interceptors.request.use((config) => {

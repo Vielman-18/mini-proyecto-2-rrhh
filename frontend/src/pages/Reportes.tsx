@@ -108,7 +108,7 @@ export default function Reportes() {
 
   const descargarPdfNomina = async (id: number) => {
     try {
-      window.open(`http://localhost:3000/nomina/${id}/pdf`, '_blank');
+      window.open(`${api.defaults.baseURL ?? ''}/nomina/${id}/pdf`, '_blank');
     } catch (error) {
       console.error(error);
       toast.error('No se pudo descargar el PDF');

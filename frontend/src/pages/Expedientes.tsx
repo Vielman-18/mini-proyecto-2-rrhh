@@ -209,7 +209,7 @@ export default function Expedientes() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <a href={`http://localhost:3000/expedientes/archivo/${doc.id}`} target="_blank" rel="noreferrer"
+                    <a href={`${api.defaults.baseURL ?? ''}/expedientes/archivo/${doc.id}`} target="_blank" rel="noreferrer"
                       className="rounded-lg border border-blue-500/30 px-4 py-2 text-center text-sm font-semibold text-blue-400 hover:bg-blue-500/10">
                       Descargar
                     </a>
