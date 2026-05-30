@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { useNomina } from '../hooks/NominaLogic';
 export const quetzal = (v: any) =>
   `Q${Number(v || 0).toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
 
@@ -18,6 +18,7 @@ export function ModalConfirmacionAction({
   loading
 }: any) {
   if (!isOpen) return null;
+    const h = useNomina();
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/50 p-4">
@@ -356,6 +357,199 @@ export function DrawerEmpleado({ isOpen, onClose, h }: any) {
           </button>
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+/**
+ * PANEL DETALLES NÓMINA
+ */
+export function PanelDetallesNomina({ isOpen, onClose, nomina, detalles }: any) {
+  if (!isOpen || !nomina) return null;
+
+  const h = useNomina();
+
+  const totalEmpleados = detalles.filter((d: any) => d.periodo === nomina.periodo).length;
+  const totalPagar = detalles
+    .filter((d: any) => d.periodo === nomina.periodo)
+    .reduce((acc: number, d: any) => acc + Number(d.totalPagar || 0), 0);
+  const totalBonificaciones = detalles
+    .filter((d: any) => d.periodo === nomina.periodo)
+    .reduce((acc: number, d: any) => acc + Number(d.bonificaciones || 0), 0);
+  const totalDeducciones = detalles
+    .filter((d: any) => d.periodo === nomina.periodo)
+    .reduce((acc: number, d: any) => acc + Number(d.deducciones || 0), 0);
+
+  const descargarVoucher = (empleadoId: number) => {
+    if (!nomina?.id || !empleadoId) {
+      console.error('Voucher URL missing nominaId or empleadoId', nomina, empleadoId);
+      return;
+    }
+
+    try {
+      window.open(`http://localhost:3000/nomina/${nomina.id}/empleado/${empleadoId}/voucher`, '_blank');
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const InfoCard = ({ label, value, color }: any) => (
+    <div className="bg-slate-950 border border-slate-700 rounded-lg p-3">
+      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{label}</p>
+      <p className={`text-lg font-black mt-1 ${color}`}>{value}</p>
+    </div>
+  );
+
+  return (
+    <div 
+      className="fixed inset-0 z-[250] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="w-full max-w-4xl bg-slate-900 border border-blue-500/20 rounded-2xl overflow-hidden shadow-2xl my-8">
+        
+        {/* HEADER */}
+        <div className="bg-gradient-to-r from-blue-600/20 to-cyan-600/20 px-6 py-4 border-b border-blue-500/20 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-black text-white">Detalles de Nómina</h2>
+            <p className="text-cyan-400 text-xs font-semibold mt-1">{nomina.periodo} • {nomina.tipo_periodo}</p>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="text-white/50 hover:text-white transition-colors text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* BODY */}
+        <div className="p-5 max-h-[70vh] overflow-y-auto">
+          
+          {/* INFO GRID */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <InfoCard 
+              label="Total Empleados" 
+              value={totalEmpleados}
+              color="text-blue-400"
+            />
+            <InfoCard 
+              label="Total a Pagar"
+              value={quetzal(totalPagar)}
+              color="text-emerald-400"
+            />
+            <InfoCard 
+              label="Bonificaciones"
+              value={quetzal(totalBonificaciones)}
+              color="text-yellow-400"
+            />
+            <InfoCard 
+              label="Deducciones"
+              value={quetzal(totalDeducciones)}
+              color="text-rose-400"
+            />
+          </div>
+
+          {/* DETALLES ADICIONALES */}
+          <div className="bg-slate-950 border border-slate-700 rounded-lg p-4 mb-4">
+            <h3 className="text-sm font-bold text-white mb-3">Período</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Inicio</p>
+                <p className="text-white text-xs font-semibold mt-1">
+                  {new Date(nomina.fecha_inicio).toLocaleDateString('es-GT')}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Fin</p>
+                <p className="text-white text-xs font-semibold mt-1">
+                  {new Date(nomina.fecha_fin).toLocaleDateString('es-GT')}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Creación</p>
+                <p className="text-white text-xs font-semibold mt-1">
+                  {new Date(nomina.fecha_creacion).toLocaleDateString('es-GT')}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Estado</p>
+                <p className={`font-bold mt-1 text-xs uppercase ${
+                  nomina.estado?.toLowerCase() === 'procesada' ? 'text-emerald-400' :
+                  nomina.estado?.toLowerCase() === 'cerrada' ? 'text-rose-400' :
+                  'text-yellow-400'
+                }`}>
+                  {nomina.estado}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* TABLA REDUCIDA DE EMPLEADOS */}
+          <div className="bg-slate-950 border border-slate-700 rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-700">
+              <h3 className="text-sm font-bold text-white">Empleados ({totalEmpleados})</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-slate-800/50">
+                  <tr className="border-b border-slate-700">
+                    <th className="px-3 py-2 text-left font-bold uppercase tracking-wider text-slate-300">Empleado</th>
+                    <th className="px-3 py-2 text-left font-bold uppercase tracking-wider text-slate-300">Salario Base</th>
+                    <th className="px-3 py-2 text-left font-bold uppercase tracking-wider text-slate-300">Bonif.</th>
+                    <th className="px-3 py-2 text-left font-bold uppercase tracking-wider text-slate-300">Deducc.</th>
+                    <th className="px-3 py-2 text-left font-bold uppercase tracking-wider text-slate-300">Neto</th>
+                    <th className="px-3 py-2 text-center font-bold uppercase tracking-wider text-slate-300">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detalles
+                    .filter((d: any) => d.periodo === nomina.periodo)
+                    .slice(0, 15)
+                    .map((detalle: any, idx: number) => {
+                      console.log('PanelDetallesNomina detalle:', detalle);
+                      return (
+                        <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-800/30 transition-colors">
+                          <td className="px-3 py-2 text-white font-semibold">
+                            {detalle.nombres} {detalle.apellidos}
+                          </td>
+                          <td className="px-3 py-2 text-slate-300">
+                            {quetzal(detalle.salarioBase)}
+                          </td>
+                          <td className="px-3 py-2 text-slate-300">
+                            {quetzal(detalle.bonificaciones)}
+                          </td>
+                          <td className="px-3 py-2 text-slate-300">
+                            {quetzal(detalle.deducciones)}
+                          </td>
+                          <td className="px-3 py-2 text-emerald-400 font-bold">
+                            {quetzal(detalle.totalPagar)}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <button
+                              onClick={() => h.generarPdfEmpleado(detalle.detalleId)}
+                              className="w-[120px] px-4 py-2 rounded-xl text-sm bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition"
+                            >
+                              PDF
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="bg-slate-950 border-t border-slate-700 px-5 py-3 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-white text-black font-bold rounded-lg hover:bg-slate-200 transition-colors text-sm"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
   );

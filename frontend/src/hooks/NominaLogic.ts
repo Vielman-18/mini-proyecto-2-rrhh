@@ -47,6 +47,69 @@ export function useNomina() {
     return raw;
   };
 
+  const generarPdfTodasNominas = async () => {
+  try {
+    setLoading(true);
+
+    const res = await api.get('/reportes/nomina/pdf', {
+      responseType: 'blob',
+    });
+
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.setAttribute('download', `nominas_todas.pdf`);
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    toast.success('PDF generado correctamente');
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al generar PDF');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const generarPdfDocumentos = async (empleadoId?: number) => {
+  try {
+    setLoading(true);
+
+    const res = await api.get('/reportes/documentos/pdf', {
+      params: empleadoId ? { empleadoId } : {},
+      responseType: 'blob',
+    });
+
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+
+    link.download = empleadoId
+      ? `documentos_empleado_${empleadoId}.pdf`
+      : 'documentos_todos.pdf';
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.URL.revokeObjectURL(url);
+
+    toast.success('PDF de documentos generado');
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al generar PDF de documentos');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 const solicitarEliminarEmpleado = (empleadoId: number) => {
   if (!isNominaActiva(estadoActual)) {
@@ -266,30 +329,36 @@ const generarPdfEmpleado = async (detalleId: number) => {
   try {
     setLoading(true);
 
-    const res = await api.get(
-      `/nomina/detalle/${detalleId}/pdf`,
-      {
-        responseType: 'blob',
-      },
-    );
+    const token = localStorage.getItem('token');
 
-    const url = window.URL.createObjectURL(
-      new Blob([res.data]),
-    );
+    const res = await fetch(`${api.defaults.baseURL}/nomina/detalle/${detalleId}/pdf`, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('Error al obtener PDF:', res.status, text);
+      toast.error('Error al generar boleta');
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
 
     const link = document.createElement('a');
-
     link.href = url;
 
-    link.setAttribute(
-      'download',
-      `boleta_empleado_${detalleId}.pdf`,
-    );
+    const contentDisposition = res.headers.get('content-disposition') || '';
+    const match = /filename="?([^";]+)"?/.exec(contentDisposition);
+    const filename = match ? match[1] : `boleta_empleado_${detalleId}.pdf`;
+
+    link.setAttribute('download', filename);
 
     document.body.appendChild(link);
-
     link.click();
-
     link.remove();
 
     window.URL.revokeObjectURL(url);
@@ -857,7 +926,8 @@ const eliminarNomina = async (id: number) => {
     confirmacionMensaje,
     confirmacionAccion,
     detallesProcesados,
-
+    generarPdfTodasNominas,
     agregarEmpleadosPorPuesto,
+    generarPdfDocumentos
   };
 }
